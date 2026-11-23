@@ -1,17 +1,15 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { metaAuthUrl, metaConfigured } from "@/lib/platforms/meta";
-import { tiktokAuthUrl, tiktokConfigured } from "@/lib/platforms/tiktok";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PROVIDERS = {
   meta: { configured: metaConfigured, authUrl: metaAuthUrl },
-  tiktok: { configured: tiktokConfigured, authUrl: tiktokAuthUrl },
 };
 
-/** Sends the browser to Meta's or TikTok's login/consent screen. */
+/** Sends the browser to Meta's login/consent screen. */
 export async function GET(req: Request, { params }: { params: Promise<{ provider: string }> }) {
   const { provider } = await params;
   const p = PROVIDERS[provider as keyof typeof PROVIDERS];

@@ -16,8 +16,6 @@ const Body = z.object({
   googleClientSecret: z.string().max(300).optional(),
   metaAppId: z.string().max(40).optional(),
   metaAppSecret: z.string().max(200).optional(),
-  tiktokClientKey: z.string().max(100).optional(),
-  tiktokClientSecret: z.string().max(200).optional(),
 });
 
 export async function POST(req: Request) {
@@ -43,10 +41,6 @@ export async function POST(req: Request) {
   const appId = body.metaAppId?.trim();
   if (appId && !/^\d{5,25}$/.test(appId)) {
     return NextResponse.json({ error: "A Meta App ID is a long number, shown at the top of your app's dashboard." }, { status: 400 });
-  }
-  const ttKey = body.tiktokClientKey?.trim();
-  if (ttKey && !/^[A-Za-z0-9_-]{8,64}$/.test(ttKey)) {
-    return NextResponse.json({ error: "That doesn't look like a TikTok client key." }, { status: 400 });
   }
   saveSettings(body);
   return NextResponse.json(publicSettings());

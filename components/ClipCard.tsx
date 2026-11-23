@@ -144,7 +144,7 @@ export function ClipCard({
 
         {clip.uploads && Object.keys(clip.uploads).length > 0 && (
           <div className="mt-4 space-y-2">
-            {(Object.entries(clip.uploads) as [PlatformId, ClipUpload][]).map(([p, u]) => (
+            {(Object.entries(clip.uploads) as [PlatformId, ClipUpload][]).filter(([p]) => p in PLATFORM_NAMES).map(([p, u]) => (
               <UploadStatus key={p} platform={p} upload={u} />
             ))}
           </div>

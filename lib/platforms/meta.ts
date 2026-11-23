@@ -190,7 +190,6 @@ async function rupload(url: string, token: string, file: string) {
 export interface PostResult {
   id: string;
   url?: string;
-  note?: string;
 }
 
 /** Facebook Page Reel: start -> upload -> finish (published). */

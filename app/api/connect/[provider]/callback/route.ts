@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { metaConnect } from "@/lib/platforms/meta";
-import { tiktokConnect } from "@/lib/platforms/tiktok";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CONNECT: Record<string, (code: string) => Promise<void>> = { meta: metaConnect, tiktok: tiktokConnect };
+const CONNECT: Record<string, (code: string) => Promise<void>> = { meta: metaConnect };
 
-/** Meta/TikTok redirect here after the user approves (or cancels) access. */
+/** Meta redirects here after the user approves (or cancels) access. */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ provider: string }> }) {
   const { provider } = await params;
   const connect = CONNECT[provider];

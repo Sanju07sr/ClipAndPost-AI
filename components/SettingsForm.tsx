@@ -20,13 +20,11 @@ interface Settings {
   anthropic: { source: "website" | "env" | null; hint: string | null; model: string };
   google: { clientId: string | null; secretHint: string | null; clientIdSource: string | null; secretSource: string | null; redirectUri: string };
   meta: { appId: string | null; secretHint: string | null; saved: boolean };
-  tiktok: { clientKey: string | null; secretHint: string | null; saved: boolean };
 }
 
 interface Connections {
   platforms: Record<PlatformId, { configured: boolean; connected: boolean; account: string | null; problem?: string | null }>;
   meta: { pages: { id: string; name: string; instagram: string | null }[]; selectedPageId: string | null; redirectUri: string };
-  tiktok: { redirectUri: string };
   youtube: { redirectUri: string };
 }
 
@@ -54,13 +52,13 @@ export function SettingsForm() {
   }, []);
   useEffect(reload, [reload]);
 
-  // Result of a Meta/TikTok/YouTube sign-in redirect.
+  // Result of a Meta/YouTube sign-in redirect.
   useEffect(() => {
     const url = new URL(window.location.href);
     const provider = url.searchParams.get("connect") || (url.searchParams.get("youtube") ? "youtube" : null);
     if (!provider) return;
     const err = url.searchParams.get("connect_error") || url.searchParams.get("youtube_error");
-    const name = provider === "meta" ? "Instagram & Facebook" : provider === "tiktok" ? "TikTok" : "YouTube";
+    const name = provider === "meta" ? "Instagram & Facebook" : "YouTube";
     setBanner(
       err
         ? { kind: "error", text: err === "not-configured" ? `Add the ${name} app keys below first.` : `${name}: ${err}` }
@@ -99,7 +97,6 @@ export function SettingsForm() {
         <div className="space-y-5">
           <YouTubeCard s={s} c={c} onChange={reload} />
           <MetaCard s={s} c={c} onChange={reload} />
-          <TikTokCard s={s} c={c} onChange={reload} />
         </div>
       </section>
     </div>
@@ -578,57 +575,6 @@ function MetaCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: (
         <li>
           Copy the <b>App ID</b> and <b>App secret</b> from <b>App settings → Basic</b> into the fields above, then click Connect.
         </li>
-      </Steps>
-    </Card>
-  );
-}
-
-function TikTokCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: () => void }) {
-  const p = c.platforms.tiktok;
-  return (
-    <Card
-      icon={<PlatformBadge platform="tiktok" size="lg" />}
-      title="TikTok"
-      subtitle="Uses TikTok's Content Posting API."
-      status={<StatusPill tone={p.connected ? "on" : "off"} label={p.connected ? "Connected" : "Not connected"} />}
-    >
-      <AppKeys
-        idLabel="Client key"
-        idPlaceholder="Client key"
-        secretLabel="Client secret"
-        secretPlaceholder="Client secret"
-        idField="tiktokClientKey"
-        secretField="tiktokClientSecret"
-        currentId={s.tiktok.clientKey}
-        currentSecretHint={s.tiktok.secretHint}
-        removable={s.tiktok.saved}
-        onSaved={onChange}
-      />
-      <ConnectRow
-        label="TikTok"
-        configured={p.configured}
-        connected={p.connected}
-        account={p.account}
-        connectHref="/api/connect/tiktok?returnTo=/settings"
-        onDisconnect={async () => {
-          await fetch("/api/connect/tiktok/disconnect", { method: "POST" });
-          onChange();
-        }}
-      />
-      <Steps>
-        <li>
-          At <A href="https://developers.tiktok.com/apps/">TikTok for Developers</A>, create an app and add <b>Login Kit</b> and the{" "}
-          <b>Content Posting API</b> (turn on <b>Direct Post</b>). Request the scopes <code>user.info.basic</code> and <code>video.publish</code>.
-        </li>
-        <li>
-          Add this redirect URI under Login Kit:
-          <RedirectUri uri={c.tiktok.redirectUri} />
-          If TikTok rejects a <code>localhost</code> address, set <code>APP_URL</code> to an https address that points to this site (for example a tunnel) and restart.
-        </li>
-        <li>
-          Until TikTok audits your app, it only allows <b>private</b> posts (&quot;Only me&quot;). You can change them to public in the TikTok app, or apply for the audit to post publicly.
-        </li>
-        <li>Copy the <b>Client key</b> and <b>Client secret</b> into the fields above, then click Connect.</li>
       </Steps>
     </Card>
   );

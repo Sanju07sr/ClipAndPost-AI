@@ -12,8 +12,6 @@ export interface SavedSettings {
   googleClientSecret?: string;
   metaAppId?: string;
   metaAppSecret?: string;
-  tiktokClientKey?: string;
-  tiktokClientSecret?: string;
 }
 
 export const SETTINGS_FILE = path.join(dataDir, "settings.json");
@@ -77,19 +75,10 @@ export const config = {
     return readSettings().metaAppSecret || process.env.META_APP_SECRET || "";
   },
   graphVersion: process.env.META_GRAPH_VERSION || "v21.0",
-  // Meta / TikTok endpoints; only overridden by tests that use a local mock server.
+  // Meta endpoints; only overridden by tests that use a local mock server.
   metaGraph: process.env.META_GRAPH_BASE || "https://graph.facebook.com",
   metaDialog: process.env.META_DIALOG_BASE || "https://www.facebook.com",
   metaRupload: process.env.META_RUPLOAD_BASE || "https://rupload.facebook.com",
-  // TikTok.
-  get tiktokClientKey(): string {
-    return readSettings().tiktokClientKey || process.env.TIKTOK_CLIENT_KEY || "";
-  },
-  get tiktokClientSecret(): string {
-    return readSettings().tiktokClientSecret || process.env.TIKTOK_CLIENT_SECRET || "";
-  },
-  tiktokAuthUrl: process.env.TIKTOK_AUTH_URL || "https://www.tiktok.com/v2/auth/authorize/",
-  tiktokApi: process.env.TIKTOK_API_BASE || "https://open.tiktokapis.com",
   captionFont: process.env.CAPTION_FONT || "Inter",
   fontsDir: process.env.FONTS_DIR || "",
 };

@@ -16,7 +16,7 @@ Paste a YouTube link and get **YouTube Shorts of the video's best moments**: ver
    - Audio loudness normalised to −14 LUFS.
    - H.264/AAC MP4 with fast-start.
 
-6. **Publishes everywhere (optional).** Connect YouTube, Instagram, Facebook and TikTok in **Settings**. Then select Shorts, tick the platforms and click Publish. For each Short, the site:
+6. **Publishes everywhere (optional).** Connect YouTube, Instagram and Facebook in **Settings**. Then select Shorts, tick the platforms and click Publish. For each Short, the site:
    - looks up which hashtags the most-viewed Shorts on that topic used in the last two weeks, using YouTube's own search data
    - has Claude write the title and description, and pick hashtags that fit the clip
    - lets you review and edit everything, then uploads with one click
@@ -87,7 +87,7 @@ Every setting can also be an environment variable, set in `.env.local`; `.env.ex
 | `MAX_CONCURRENT_JOBS` | `1` | Videos processed at the same time |
 | `FULL_DOWNLOAD` | `0` | Set to `1` to download whole videos instead of clip sections |
 
-### Publishing to Instagram, Facebook and TikTok
+### Publishing to Instagram and Facebook
 
 Each platform needs a free developer app, set up once. The **Settings** page has step-by-step instructions and the exact redirect URLs to register.
 
@@ -95,11 +95,8 @@ Each platform needs a free developer app, set up once. The **Settings** page has
   - Instagram must be a Business or Creator account linked to a Facebook Page.
   - While the app is in *Development* mode, you can post to accounts you administer without Meta's App Review.
   - Reels are always public.
-- **TikTok** uses Login Kit and the Content Posting API (Direct Post).
-  - Until TikTok audits the app, posts are private ("Only me").
-  - TikTok may reject `localhost` redirect URLs. If so, set `APP_URL` to an https address that points to this site, for example a tunnel.
 
-Instagram, Facebook and TikTok receive one caption made of the title, description and hashtags. Uploads to different platforms run in parallel, and the site never posts the same Short twice to one platform.
+Instagram and Facebook receive one caption made of the title, description and hashtags. Uploads to different platforms run in parallel, and the site never posts the same Short twice to one platform.
 
 ### Publishing to YouTube
 

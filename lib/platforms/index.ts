@@ -2,7 +2,6 @@ import { googleConfigured, loadAccount } from "../google";
 import { config } from "../config";
 import type { PlatformId } from "../types";
 import { metaStatus } from "./meta";
-import { tiktokStatus } from "./tiktok";
 
 export interface PlatformStatus {
   configured: boolean;
@@ -18,7 +17,6 @@ export interface PlatformStatus {
 export function allStatuses() {
   const yt = loadAccount();
   const meta = metaStatus();
-  const tt = tiktokStatus();
   const platforms: Record<PlatformId, PlatformStatus> = {
     youtube: {
       configured: googleConfigured(),
@@ -45,17 +43,10 @@ export function allStatuses() {
       picture: meta.page?.picture ?? null,
       problem: meta.expired ? "Login expired: connect again." : null,
     },
-    tiktok: {
-      configured: tt.configured,
-      connected: tt.connected,
-      account: tt.account ? (tt.account.username ? `@${tt.account.username}` : tt.account.name) : null,
-      picture: tt.account?.picture ?? null,
-    },
   };
   return {
     platforms,
     meta: { pages: meta.pages, selectedPageId: meta.page?.id ?? null, redirectUri: meta.redirectUri },
-    tiktok: { redirectUri: tt.redirectUri },
     youtube: { redirectUri: config.googleRedirectUri },
   };
 }

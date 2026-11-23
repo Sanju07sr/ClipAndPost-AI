@@ -7,7 +7,6 @@ import { getJob, jobDir, updateJob } from "./store";
 import { parseJson3, wordsInRange } from "./transcript";
 import type { Clip, ClipUpload, PlatformId, Privacy, PublishMeta } from "./types";
 import { uploadFacebookReel, uploadInstagramReel, type PostResult } from "./platforms/meta";
-import { uploadTikTok } from "./platforms/tiktok";
 
 // ------------------------------------------------------------ Google API errors
 
@@ -203,7 +202,7 @@ function setUpload(jobId: string, clipId: string, platform: PlatformId, patch: P
   });
 }
 
-/** One caption for Instagram, Facebook and TikTok: title, description, hashtags. */
+/** One caption for Instagram and Facebook: title, description, hashtags. */
 export function socialCaption(item: Pick<PublishItem, "title" | "description" | "hashtags">) {
   const tags = item.hashtags.map(cleanTag).filter(Boolean).slice(0, 25).map((h) => `#${h}`).join(" ");
   return [item.title.trim(), item.description.trim(), tags].filter(Boolean).join("\n\n").slice(0, 2200);
@@ -218,20 +217,14 @@ async function uploadTo(platform: PlatformId, jobId: string, item: PublishItem) 
   const progress = (p: number) => setUpload(jobId, item.clipId, platform, { progress: Math.round(p) });
   const caption = socialCaption(item);
   let result: PostResult;
-  let actualPrivacy = "public";
   if (platform === "instagram") result = await uploadInstagramReel(file, caption, progress);
-  else if (platform === "facebook") result = await uploadFacebookReel(file, caption, progress);
-  else {
-    result = await uploadTikTok(file, caption, item.privacy === "public", progress);
-    if (result.note) actualPrivacy = "private";
-  }
+  else result = await uploadFacebookReel(file, caption, progress);
   setUpload(jobId, item.clipId, platform, {
     status: "published",
     progress: 100,
     videoId: result.id,
     url: result.url,
-    actualPrivacy: platform === "tiktok" ? actualPrivacy : "public",
-    note: result.note,
+    actualPrivacy: "public",
     publishedAt: new Date().toISOString(),
   });
 }

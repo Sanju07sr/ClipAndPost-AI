@@ -1,11 +1,10 @@
-import { Camera, Music2, Play, ThumbsUp } from "lucide-react";
+import { Camera, Play, ThumbsUp } from "lucide-react";
 import type { PlatformId } from "@/lib/types";
 
 const STYLE: Record<PlatformId, { bg: string; icon: typeof Play }> = {
   youtube: { bg: "bg-[#ff0033]", icon: Play },
   instagram: { bg: "bg-[linear-gradient(45deg,#f58529,#dd2a7b_55%,#8134af)]", icon: Camera },
   facebook: { bg: "bg-[#1877f2]", icon: ThumbsUp },
-  tiktok: { bg: "bg-black ring-1 ring-white/20 shadow-[inset_2px_0_0_#25f4ee,inset_-2px_0_0_#fe2c55]", icon: Music2 },
 };
 
 /** Small square mark in each platform's colour. */

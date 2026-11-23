@@ -21,7 +21,7 @@ const Body = z.object({
     )
     .min(1)
     .max(10),
-  platforms: z.array(z.enum(["youtube", "instagram", "facebook", "tiktok"])).min(1, "Choose at least one platform").max(4),
+  platforms: z.array(z.enum(["youtube", "instagram", "facebook"])).min(1, "Choose at least one platform").max(3),
 });
 
 /** Queues the selected clips for upload to the connected YouTube channel. */

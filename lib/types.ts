@@ -74,12 +74,11 @@ export interface ClipPlan {
 export type ClipStatus = "pending" | "downloading" | "rendering" | "done" | "error";
 
 export type Privacy = "public" | "unlisted" | "private";
-export type PlatformId = "youtube" | "instagram" | "facebook" | "tiktok";
+export type PlatformId = "youtube" | "instagram" | "facebook";
 export const PLATFORM_NAMES: Record<PlatformId, string> = {
   youtube: "YouTube",
   instagram: "Instagram",
   facebook: "Facebook",
-  tiktok: "TikTok",
 };
 
 /** Metadata prepared for publishing a clip to YouTube. */

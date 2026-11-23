@@ -199,14 +199,13 @@ export function PublishDialog(props: {
             </button>
           </div>
           <ul className="space-y-1 text-xs leading-relaxed text-ink-400">
-            <li>Instagram, Facebook and TikTok get one caption: the title, description and hashtags together.</li>
+            <li>Instagram and Facebook get one caption: the title, description and hashtags together.</li>
             {targets.includes("youtube") && (
               <li>YouTube: about 6 uploads a day on the free API quota; new Google projects upload as private until YouTube&apos;s API audit.</li>
             )}
             {(targets.includes("instagram") || targets.includes("facebook")) && privacy !== "public" && (
-              <li>Instagram and Facebook Reels are always public; the privacy choice applies to YouTube and TikTok.</li>
+              <li>Instagram and Facebook Reels are always public; the privacy choice applies to YouTube.</li>
             )}
-            {targets.includes("tiktok") && <li>TikTok: unaudited apps can only post privately (&quot;Only me&quot;).</li>}
           </ul>
         </div>
       </div>

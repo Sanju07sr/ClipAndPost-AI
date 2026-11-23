@@ -6,7 +6,7 @@ import { CheckSquare, CircleCheck, LoaderCircle, Plus, Send, Settings, Square, T
 import { PLATFORM_NAMES, type PlatformId } from "@/lib/types";
 import { PlatformBadge } from "./PlatformBadge";
 
-export const PLATFORMS: PlatformId[] = ["youtube", "instagram", "facebook", "tiktok"];
+export const PLATFORMS: PlatformId[] = ["youtube", "instagram", "facebook"];
 
 export interface ConnState {
   platforms: Record<PlatformId, { configured: boolean; connected: boolean; account: string | null; problem?: string | null }>;
