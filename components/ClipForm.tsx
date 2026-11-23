@@ -76,7 +76,8 @@ const DEFAULTS: Prefs = {
   endCard: "",
 };
 
-const PREFS_KEY = "clipforge:prefs";
+const PREFS_KEY = "clipandpost:prefs";
+const OLD_PREFS_KEY = "clipforge:prefs"; // before the rename
 
 export function ClipForm() {
   const router = useRouter();
@@ -90,7 +91,7 @@ export function ClipForm() {
   // Remember the creator's choices between visits.
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "null");
+      const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || localStorage.getItem(OLD_PREFS_KEY) || "null");
       if (saved) setP({ ...DEFAULTS, ...saved });
     } catch {}
   }, []);

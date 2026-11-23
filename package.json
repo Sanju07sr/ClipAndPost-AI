@@ -2,7 +2,7 @@
   "name": "clipping-website",
   "version": "0.1.0",
   "private": true,
-  "description": "ClipForge AI: paste a YouTube link and get Shorts-ready vertical clips of the best moments.",
+  "description": "ClipAndPost AI: paste a YouTube link and get Shorts-ready vertical clips of the best moments.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

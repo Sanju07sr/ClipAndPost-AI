@@ -1,6 +1,6 @@
 import { SettingsForm } from "@/components/SettingsForm";
 
-export const metadata = { title: "Settings · ClipForge AI" };
+export const metadata = { title: "Settings · ClipAndPost AI" };
 
 export default function SettingsPage() {
   return (

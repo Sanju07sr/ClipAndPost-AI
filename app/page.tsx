@@ -26,7 +26,7 @@ export default function Home() {
             <span className="text-gradient">A week of Shorts.</span>
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-300">
-            Paste a YouTube link. ClipForge finds the best moments, reframes them to vertical, adds animated captions and
+            Paste a YouTube link. ClipAndPost AI finds the best moments, reframes them to vertical, adds animated captions and
             hands you upload-ready Shorts.
           </p>
           <div className="mt-8">

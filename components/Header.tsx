@@ -6,10 +6,11 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-ink-950/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5" aria-label="ClipForge AI home">
+        <Link href="/" className="flex items-center gap-2.5" aria-label="ClipAndPost AI home">
           <Logo className="h-8 w-8" />
           <span className="whitespace-nowrap font-display text-lg font-semibold tracking-tight">
-            ClipForge <span className="text-gradient">AI</span>
+            Clip<span className="text-ink-300">And</span>Post{" "}
+            <span className="bg-brand ml-0.5 rounded-md px-1.5 py-0.5 align-middle text-xs font-bold tracking-wide text-white">AI</span>
           </span>
         </Link>
         <nav className="flex items-center gap-1 text-sm text-ink-300">

@@ -1,4 +1,4 @@
-# ClipForge AI
+# ClipAndPost AI
 
 Paste a YouTube link and get **YouTube Shorts of the video's best moments**: vertical 1080×1920 clips with animated captions, a hook title card, a virality score, and a ready-to-paste title, description and hashtags.
 
@@ -66,8 +66,8 @@ npm run dev                     # http://localhost:3000
 For production use `npm run build && npm start`, or Docker:
 
 ```bash
-docker build -t clipforge .
-docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-... -v clipforge-data:/data clipforge
+docker build -t clipandpost .
+docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-... -v clipandpost-data:/data clipandpost
 ```
 
 ## Configuration

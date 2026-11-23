@@ -1,4 +1,4 @@
-// Checks that the tools ClipForge needs are installed. Run: npm run doctor
+// Checks that the tools ClipAndPost AI needs are installed. Run: npm run doctor
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 
