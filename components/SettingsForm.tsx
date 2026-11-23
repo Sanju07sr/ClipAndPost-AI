@@ -562,8 +562,9 @@ function MetaCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: (
           Make sure your Instagram is a <b>Business or Creator</b> account and is linked to a <b>Facebook Page</b> (Instagram app → Settings → Account type and tools).
         </li>
         <li>
-          At <A href="https://developers.facebook.com/apps/creation/">Meta for Developers</A>, create an app (type <b>Business</b>), then add the{" "}
-          <b>Facebook Login for Business</b> and <b>Instagram</b> products.
+          Open <A href="https://developers.facebook.com/apps/">Meta for Developers → My Apps</A> (log in with the Facebook account that manages
+          your Page) and click <b>Create app</b>. Choose the use cases for <b>managing your Page</b> and <b>Instagram content</b> (or app type{" "}
+          <b>Business</b> if you&apos;re asked for a type), and make sure <b>Facebook Login</b> is added.
         </li>
         <li>
           In Facebook Login settings, add this <b>Valid OAuth Redirect URI</b>:

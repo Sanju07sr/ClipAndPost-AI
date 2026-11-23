@@ -91,7 +91,7 @@ Every setting can also be an environment variable, set in `.env.local`; `.env.ex
 
 Each platform needs a free developer app, set up once. The **Settings** page has step-by-step instructions and the exact redirect URLs to register.
 
-- **Instagram Reels and Facebook Reels** use one Meta app (type *Business*) with Facebook Login.
+- **Instagram Reels and Facebook Reels** use one Meta app with Facebook Login, created at [developers.facebook.com/apps](https://developers.facebook.com/apps/).
   - Instagram must be a Business or Creator account linked to a Facebook Page.
   - While the app is in *Development* mode, you can post to accounts you administer without Meta's App Review.
   - Reels are always public.
