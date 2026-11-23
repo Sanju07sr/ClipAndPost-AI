@@ -86,6 +86,8 @@ export interface Job {
   hasTranscript?: boolean;
   clips: Clip[];
   log: string[];
+  /** Non-fatal problems to show in the UI, e.g. "captions-unavailable". */
+  warnings?: string[];
 }
 
 export const DEFAULT_OPTIONS: Omit<JobOptions, "url"> = {

@@ -234,6 +234,16 @@ export function JobView({ id }: { id: string }) {
         </section>
       )}
 
+      {job.warnings?.includes("captions-unavailable") && (
+        <section className="mt-6 flex items-start gap-2.5 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            These Shorts were rendered <b>without captions</b> because your ffmpeg doesn&apos;t include libass. The home page
+            shows how to fix it; after that, run this video again to get captions.
+          </p>
+        </section>
+      )}
+
       {/* Clips */}
       {job.clips.length > 0 && (
         <section className="mt-10">

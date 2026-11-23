@@ -16,6 +16,12 @@ const checks = [
   ["yt-dlp", ...tool(process.env.YTDLP_PATH || "yt-dlp", ["--version"]), true],
   ["ffmpeg", ...tool(process.env.FFMPEG_PATH || "ffmpeg", ["-version"]), true],
   ["ffprobe", ...tool(process.env.FFPROBE_PATH || "ffprobe", ["-version"]), true],
+  [
+    "ffmpeg captions support (libass)",
+    () => /^\s*\S*\s+ass\s/m.test(spawnSync(process.env.FFMPEG_PATH || "ffmpeg", ["-hide_banner", "-filters"], { encoding: "utf8" }).stdout || ""),
+    "needed for captions. Mac fix: brew tap homebrew-ffmpeg/ffmpeg && brew install homebrew-ffmpeg/ffmpeg/ffmpeg",
+    false,
+  ],
   ["deno (recommended by yt-dlp for YouTube)", ...tool("deno", ["--version"]), false],
   [
     "ANTHROPIC_API_KEY (AI moment picking)",

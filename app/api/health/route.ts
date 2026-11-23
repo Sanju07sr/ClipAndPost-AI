@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { run } from "@/lib/exec";
+import { ffmpegHasAss } from "@/lib/media";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export async function GET() {
     ytdlp,
     ffmpeg: ffmpeg?.replace(/ Copyright.*/, "") ?? null,
     claude: config.hasClaude,
+    captions: ffmpeg ? await ffmpegHasAss() : null,
     model: config.hasClaude ? config.claudeModel : null,
     ok: Boolean(ytdlp && ffmpeg),
   });

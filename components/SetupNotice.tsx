@@ -8,6 +8,7 @@ interface Health {
   ytdlp: string | null;
   ffmpeg: string | null;
   claude: boolean;
+  captions: boolean | null;
 }
 
 /** Tells the person running the site what's missing from their setup. */
@@ -29,6 +30,22 @@ export function SetupNotice() {
           The server is missing <b>{missing}</b>, so videos can&apos;t be processed yet. Install it and run{" "}
           <code className="rounded bg-black/30 px-1">npm run doctor</code>.
         </p>
+      </div>
+    );
+  }
+  if (h.captions === false) {
+    return (
+      <div className="mx-auto mt-4 flex max-w-2xl items-start gap-2.5 rounded-xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-left text-sm text-amber-100">
+        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          <p>
+            Your ffmpeg can&apos;t draw captions (it was built without <b>libass</b>), so Shorts will render without
+            captions or hook cards. On a Mac, swap in the full ffmpeg build in Terminal, then restart the site:
+          </p>
+          <pre className="mt-2 overflow-x-auto rounded-lg bg-black/40 p-2.5 text-xs leading-relaxed text-amber-50">
+            brew uninstall --ignore-dependencies ffmpeg{"\n"}brew tap homebrew-ffmpeg/ffmpeg{"\n"}brew install homebrew-ffmpeg/ffmpeg/ffmpeg
+          </pre>
+        </div>
       </div>
     );
   }

@@ -14,6 +14,22 @@ export interface Probe {
   hasAudio: boolean;
 }
 
+let assSupport: Promise<boolean> | null = null;
+
+/**
+ * Whether this ffmpeg was built with libass (needed to burn in captions).
+ * Some builds, such as Homebrew's default ffmpeg, leave it out.
+ */
+export function ffmpegHasAss(): Promise<boolean> {
+  assSupport ??= run(config.ffmpeg, ["-hide_banner", "-filters"], { timeoutMs: 15_000 })
+    .then(({ stdout }) => /^\s*\S*\s+ass\s/m.test(stdout))
+    .catch(() => {
+      assSupport = null; // retry next time (ffmpeg may be installed later)
+      return false;
+    });
+  return assSupport;
+}
+
 export async function probe(file: string): Promise<Probe> {
   const { stdout } = await run(config.ffprobe, [
     "-v",
@@ -139,7 +155,7 @@ export async function renderShort(opts: {
   if (opts.assFile) {
     // Relative file name + cwd avoids filter-path escaping issues.
     const fontsdir = config.fontsDir ? `:fontsdir=${config.fontsDir.replace(/[:\\']/g, "\\$&")}` : "";
-    vf += `,ass=${path.basename(opts.assFile)}${fontsdir}`;
+    vf += `,ass=filename=${path.basename(opts.assFile)}${fontsdir}`;
   }
   const args = [
     "-hide_banner",

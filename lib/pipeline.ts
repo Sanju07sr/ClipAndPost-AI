@@ -4,7 +4,7 @@ import { config } from "./config";
 import { buildAss } from "./captions";
 import { findFocusWithClaude, pickMomentsWithClaude } from "./ai";
 import { dedupe, pickMomentsHeuristic, snapToSegments } from "./moments";
-import { extractFrames, loudnessPerSecond, makeThumbnail, probe, renderShort } from "./media";
+import { extractFrames, ffmpegHasAss, loudnessPerSecond, makeThumbnail, probe, renderShort } from "./media";
 import { jobDir, getJob, updateJob } from "./store";
 import { parseJson3, toSegments, transcriptForPrompt, wordsInRange, formatTime } from "./transcript";
 import type { Segment, Word } from "./transcript";
@@ -272,8 +272,16 @@ async function processJob(id: string) {
       }
 
       const clipWords = wordsInRange(words, c.start, c.start + duration);
+      const wantText = options.captionStyle !== "none" || options.hookOverlay;
+      const canText = wantText && (await ffmpegHasAss());
+      if (wantText && !canText && i === 0) {
+        log(id, "Captions skipped: this ffmpeg was built without libass. See the setup notice on the home page to fix it.");
+        updateJob(id, (j) => {
+          j.warnings = [...(j.warnings || []), "captions-unavailable"];
+        });
+      }
       const ass =
-        options.captionStyle !== "none" || options.hookOverlay
+        canText
           ? buildAss({
               words: options.captionStyle === "none" ? [] : clipWords,
               duration,
