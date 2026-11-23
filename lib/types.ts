@@ -74,6 +74,13 @@ export interface ClipPlan {
 export type ClipStatus = "pending" | "downloading" | "rendering" | "done" | "error";
 
 export type Privacy = "public" | "unlisted" | "private";
+export type PlatformId = "youtube" | "instagram" | "facebook" | "tiktok";
+export const PLATFORM_NAMES: Record<PlatformId, string> = {
+  youtube: "YouTube",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+};
 
 /** Metadata prepared for publishing a clip to YouTube. */
 export interface PublishMeta {
@@ -98,11 +105,16 @@ export interface ClipUpload {
   /** Privacy YouTube actually applied (can differ: unverified apps are forced to private). */
   actualPrivacy?: string;
   error?: string;
+  /** Extra information, e.g. that a platform forced a private post. */
+  note?: string;
   publishedAt?: string;
 }
 
 export interface Clip extends ClipPlan {
   meta?: PublishMeta;
+  /** Upload state per platform. */
+  uploads?: Partial<Record<PlatformId, ClipUpload>>;
+  /** @deprecated YouTube-only upload state from older versions; read via uploads.youtube. */
   upload?: ClipUpload;
   id: string;
   index: number;

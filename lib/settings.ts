@@ -38,5 +38,15 @@ export function publicSettings() {
       secretHint: config.googleClientSecret ? mask(config.googleClientSecret) : null,
       redirectUri: config.googleRedirectUri,
     },
+    meta: {
+      appId: config.metaAppId || null, // not secret
+      secretHint: config.metaAppSecret ? mask(config.metaAppSecret) : null,
+      saved: Boolean(s.metaAppId || s.metaAppSecret),
+    },
+    tiktok: {
+      clientKey: config.tiktokClientKey || null, // not secret
+      secretHint: config.tiktokClientSecret ? mask(config.tiktokClientSecret) : null,
+      saved: Boolean(s.tiktokClientKey || s.tiktokClientSecret),
+    },
   };
 }

@@ -35,6 +35,10 @@ function load() {
         job.error = "The server restarted while this job was running. Please start it again.";
         job.message = job.error;
       }
+      for (const c of job.clips) {
+        if (c.upload && !c.uploads) c.uploads = { youtube: c.upload };
+        delete c.upload;
+      }
       store.jobs.set(id, job);
     } catch {
       /* ignore unreadable job folders */

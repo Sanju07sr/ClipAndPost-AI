@@ -1,23 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Brain, CircleCheck, ExternalLink, Eye, EyeOff, KeyRound, LoaderCircle, Trash2, TriangleAlert } from "lucide-react";
-import { VideoGlyph } from "./Logo";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Brain,
+  CircleCheck,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LoaderCircle,
+  LogOut,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
+import type { PlatformId } from "@/lib/types";
+import { PlatformBadge } from "./PlatformBadge";
 
 interface Settings {
   anthropic: { source: "website" | "env" | null; hint: string | null; model: string };
-  google: {
-    clientId: string | null;
-    clientIdSource: "website" | "env" | null;
-    secretSource: "website" | "env" | null;
-    secretHint: string | null;
-    redirectUri: string;
-  };
+  google: { clientId: string | null; secretHint: string | null; clientIdSource: string | null; secretSource: string | null; redirectUri: string };
+  meta: { appId: string | null; secretHint: string | null; saved: boolean };
+  tiktok: { clientKey: string | null; secretHint: string | null; saved: boolean };
+}
+
+interface Connections {
+  platforms: Record<PlatformId, { configured: boolean; connected: boolean; account: string | null; problem?: string | null }>;
+  meta: { pages: { id: string; name: string; instagram: string | null }[]; selectedPageId: string | null; redirectUri: string };
+  tiktok: { redirectUri: string };
+  youtube: { redirectUri: string };
 }
 
 type Msg = { kind: "ok" | "error"; text: string } | null;
 
-async function save(body: Record<string, string>): Promise<Settings> {
+async function saveSettings(body: Record<string, string>): Promise<Settings> {
   const res = await fetch("/api/settings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -30,46 +45,105 @@ async function save(body: Record<string, string>): Promise<Settings> {
 
 export function SettingsForm() {
   const [s, setS] = useState<Settings | null>(null);
+  const [c, setC] = useState<Connections | null>(null);
+  const [banner, setBanner] = useState<Msg>(null);
+
+  const reload = useCallback(() => {
+    fetch("/api/settings", { cache: "no-store" }).then((r) => r.json()).then(setS).catch(() => undefined);
+    fetch("/api/connections", { cache: "no-store" }).then((r) => r.json()).then(setC).catch(() => undefined);
+  }, []);
+  useEffect(reload, [reload]);
+
+  // Result of a Meta/TikTok/YouTube sign-in redirect.
   useEffect(() => {
-    fetch("/api/settings", { cache: "no-store" })
-      .then((r) => r.json())
-      .then(setS)
-      .catch(() => undefined);
+    const url = new URL(window.location.href);
+    const provider = url.searchParams.get("connect") || (url.searchParams.get("youtube") ? "youtube" : null);
+    if (!provider) return;
+    const err = url.searchParams.get("connect_error") || url.searchParams.get("youtube_error");
+    const name = provider === "meta" ? "Instagram & Facebook" : provider === "tiktok" ? "TikTok" : "YouTube";
+    setBanner(
+      err
+        ? { kind: "error", text: err === "not-configured" ? `Add the ${name} app keys below first.` : `${name}: ${err}` }
+        : { kind: "ok", text: `${name} connected.` },
+    );
+    window.history.replaceState(null, "", url.pathname);
   }, []);
 
-  if (!s) return <div className="skeleton h-64 rounded-3xl" />;
+  if (!s || !c) return <div className="skeleton h-80 rounded-3xl" />;
   return (
-    <div className="space-y-6">
-      <AnthropicCard s={s} onSaved={setS} />
-      <GoogleCard s={s} onSaved={setS} />
+    <div className="space-y-10">
+      {banner && (
+        <div
+          className={`flex items-start gap-2 rounded-2xl px-4 py-3 text-sm ${
+            banner.kind === "ok" ? "bg-lime-400/10 text-lime-100 ring-1 ring-lime-400/25" : "bg-rose-500/10 text-rose-100 ring-1 ring-rose-400/25"
+          }`}
+        >
+          {banner.kind === "ok" ? <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" /> : <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />}
+          <p className="flex-1">{banner.text}</p>
+          <button onClick={() => setBanner(null)} className="text-xs opacity-70 hover:opacity-100">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      <section>
+        <SectionTitle title="AI" subtitle="Claude picks the moments, frames the speaker and writes titles." />
+        <AnthropicCard s={s} onSaved={setS} />
+      </section>
+
+      <section>
+        <SectionTitle
+          title="Connected accounts"
+          subtitle="Connect once, then publish a Short to every platform with one click. Each platform needs a free developer app (one-time setup)."
+        />
+        <div className="space-y-5">
+          <YouTubeCard s={s} c={c} onChange={reload} />
+          <MetaCard s={s} c={c} onChange={reload} />
+          <TikTokCard s={s} c={c} onChange={reload} />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------ shared UI
+
+function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="mb-4">
+      <h2 className="font-display text-xl font-semibold text-white">{title}</h2>
+      <p className="mt-1 text-ink-300">{subtitle}</p>
     </div>
   );
 }
 
 function Card(props: { icon: React.ReactNode; title: string; subtitle: string; status: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="glass rounded-3xl p-5 sm:p-6">
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06]">{props.icon}</span>
+    <div className="glass rounded-3xl p-5 sm:p-6">
+      <div className="flex items-start gap-3.5">
+        {props.icon}
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-lg font-semibold text-white">{props.title}</h2>
+          <h3 className="font-display text-lg font-semibold text-white">{props.title}</h3>
           <p className="text-sm text-ink-300">{props.subtitle}</p>
         </div>
         {props.status}
       </div>
       <div className="mt-5">{props.children}</div>
-    </section>
+    </div>
   );
 }
 
-function StatusPill({ on, label }: { on: boolean; label: string }) {
+function StatusPill({ tone, label }: { tone: "on" | "off" | "warn"; label: string }) {
+  const cls =
+    tone === "on"
+      ? "bg-lime-400/10 text-lime-200 ring-lime-400/25"
+      : tone === "warn"
+        ? "bg-amber-400/10 text-amber-200 ring-amber-300/25"
+        : "bg-white/5 text-ink-300 ring-white/10";
+  const dot = tone === "on" ? "bg-lime-400" : tone === "warn" ? "bg-amber-300" : "bg-ink-400";
   return (
-    <span
-      className={`hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex ${
-        on ? "bg-lime-400/10 text-lime-200 ring-1 ring-lime-400/25" : "bg-white/5 text-ink-300 ring-1 ring-white/10"
-      }`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${on ? "bg-lime-400" : "bg-ink-400"}`} />
+    <span className={`hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 sm:inline-flex ${cls}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {label}
     </span>
   );
@@ -85,6 +159,9 @@ function Notice({ msg }: { msg: Msg }) {
   );
 }
 
+const inputCls =
+  "h-11 w-full rounded-xl bg-ink-950/70 px-3.5 font-mono text-sm text-white ring-1 ring-white/10 placeholder:font-sans placeholder:text-ink-400 focus:outline-none focus:ring-brand-pink/60";
+
 function SecretInput(props: { value: string; onChange: (v: string) => void; placeholder: string; label: string }) {
   const [show, setShow] = useState(false);
   return (
@@ -97,7 +174,7 @@ function SecretInput(props: { value: string; onChange: (v: string) => void; plac
         aria-label={props.label}
         autoComplete="off"
         spellCheck={false}
-        className="h-11 w-full rounded-xl bg-ink-950/70 pl-3.5 pr-10 font-mono text-sm text-white ring-1 ring-white/10 placeholder:font-sans placeholder:text-ink-400 focus:outline-none focus:ring-brand-pink/60"
+        className={`${inputCls} pr-10`}
       />
       <button
         type="button"
@@ -111,6 +188,187 @@ function SecretInput(props: { value: string; onChange: (v: string) => void; plac
   );
 }
 
+function KeyValue({ label, value }: { label: string; value: string }) {
+  return (
+    <p className="truncate text-sm">
+      <span className="text-ink-400">{label}: </span>
+      <span className="font-mono text-ink-100">{value}</span>
+    </p>
+  );
+}
+
+function RedirectUri({ uri }: { uri: string }) {
+  return <code className="mt-1 block w-fit max-w-full break-all rounded-lg bg-black/40 px-2 py-1 text-xs text-ink-100">{uri}</code>;
+}
+
+/** Two-field app key form (public id + secret) used by every platform card. */
+function AppKeys(props: {
+  idLabel: string;
+  idPlaceholder: string;
+  secretLabel: string;
+  secretPlaceholder: string;
+  idField: string;
+  secretField: string;
+  currentId: string | null;
+  currentSecretHint: string | null;
+  removable: boolean;
+  onSaved: () => void;
+}) {
+  const [id, setId] = useState("");
+  const [secret, setSecret] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<Msg>(null);
+  const hasKeys = Boolean(props.currentId && props.currentSecretHint);
+  const [editing, setEditing] = useState(false);
+  const showForm = !hasKeys || editing;
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const body: Record<string, string> = {};
+    if (id.trim()) body[props.idField] = id;
+    if (secret.trim()) body[props.secretField] = secret;
+    if (!Object.keys(body).length) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await saveSettings(body);
+      setId("");
+      setSecret("");
+      setMsg({ kind: "ok", text: "Saved." });
+      setEditing(false);
+      props.onSaved();
+    } catch (err) {
+      setMsg({ kind: "error", text: (err as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirm("Remove these saved app keys?")) return;
+    await saveSettings({ [props.idField]: "", [props.secretField]: "" });
+    props.onSaved();
+  }
+
+  return (
+    <div>
+      {(props.currentId || props.currentSecretHint) && (
+        <div className="mb-3 space-y-1 rounded-xl bg-white/[0.03] px-3.5 py-2.5 ring-1 ring-white/5">
+          {props.currentId && <KeyValue label={props.idLabel} value={props.currentId} />}
+          {props.currentSecretHint && <KeyValue label={props.secretLabel} value={props.currentSecretHint} />}
+          <div className="flex gap-4 pt-1">
+            {hasKeys && (
+              <button onClick={() => setEditing((e) => !e)} className="text-xs text-ink-300 hover:text-white">
+                {editing ? "Cancel" : "Change keys"}
+              </button>
+            )}
+            {props.removable && (
+              <button onClick={remove} className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-rose-300">
+                <Trash2 className="h-3.5 w-3.5" /> Remove keys
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {showForm && (
+      <form onSubmit={submit} className="space-y-2">
+        <input
+          value={id}
+          onChange={(e) => setId(e.target.value)}
+          placeholder={props.currentId ? `New ${props.idLabel.toLowerCase()} (optional)` : props.idPlaceholder}
+          aria-label={props.idLabel}
+          autoComplete="off"
+          spellCheck={false}
+          className={inputCls}
+        />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <SecretInput
+            value={secret}
+            onChange={setSecret}
+            placeholder={props.currentSecretHint ? `New ${props.secretLabel.toLowerCase()} (optional)` : props.secretPlaceholder}
+            label={props.secretLabel}
+          />
+          <button
+            type="submit"
+            disabled={(!id.trim() && !secret.trim()) || busy}
+            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-ink-950 transition hover:bg-ink-100 disabled:opacity-40"
+          >
+            {busy && <LoaderCircle className="h-4 w-4 animate-spin" />} Save keys
+          </button>
+        </div>
+      </form>
+      )}
+      <Notice msg={msg} />
+    </div>
+  );
+}
+
+function ConnectRow(props: {
+  connected: boolean;
+  configured: boolean;
+  account: string | null;
+  problem?: string | null;
+  connectHref: string;
+  onDisconnect: () => Promise<void>;
+  label: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  if (!props.configured && !props.connected) {
+    return <p className="mt-4 text-sm text-ink-400">Save the app keys above, then connect your account.</p>;
+  }
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-white/[0.03] px-4 py-3 ring-1 ring-white/5">
+      {props.connected ? (
+        <>
+          <CircleCheck className="h-5 w-5 text-lime-400" />
+          <p className="min-w-0 flex-1 text-sm text-ink-100">
+            Connected as <b className="text-white">{props.account}</b>
+          </p>
+          <button
+            onClick={async () => {
+              if (!confirm(`Disconnect ${props.label}?`)) return;
+              setBusy(true);
+              await props.onDisconnect();
+              setBusy(false);
+            }}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-ink-300 ring-1 ring-white/10 transition hover:text-white"
+          >
+            <LogOut className="h-4 w-4" /> Disconnect
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="min-w-0 flex-1 text-sm text-ink-300">{props.problem || "Not connected yet."}</p>
+          <a
+            href={props.connectHref}
+            className="bg-brand inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-pink/20 transition hover:brightness-110"
+          >
+            Connect {props.label}
+          </a>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Steps({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="mt-4 text-sm text-ink-300">
+      <summary className="cursor-pointer font-medium text-ink-200 hover:text-white">How to get these keys</summary>
+      <ol className="mt-3 list-decimal space-y-2 pl-5 leading-relaxed marker:text-ink-400">{children}</ol>
+    </details>
+  );
+}
+
+const A = ({ href, children }: { href: string; children: React.ReactNode }) => (
+  <a className="inline-flex items-center gap-0.5 text-brand-pink underline" href={href} target="_blank" rel="noreferrer">
+    {children} <ExternalLink className="h-3 w-3" />
+  </a>
+);
+
+// ------------------------------------------------------------ cards
+
 function AnthropicCard({ s, onSaved }: { s: Settings; onSaved: (s: Settings) => void }) {
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
@@ -123,9 +381,9 @@ function AnthropicCard({ s, onSaved }: { s: Settings; onSaved: (s: Settings) => 
     setBusy(true);
     setMsg(null);
     try {
-      onSaved(await save({ anthropicApiKey: key }));
+      onSaved(await saveSettings({ anthropicApiKey: key }));
       setKey("");
-      setMsg({ kind: "ok", text: "Key checked and saved. AI moment picking, speaker framing and YouTube titles are on." });
+      setMsg({ kind: "ok", text: "Key checked and saved. AI moment picking, speaker framing and titles are on." });
     } catch (err) {
       setMsg({ kind: "error", text: (err as Error).message });
     } finally {
@@ -133,23 +391,16 @@ function AnthropicCard({ s, onSaved }: { s: Settings; onSaved: (s: Settings) => 
     }
   }
 
-  async function remove() {
-    if (!confirm("Remove the saved Anthropic API key?")) return;
-    setBusy(true);
-    try {
-      onSaved(await save({ anthropicApiKey: "" }));
-      setMsg({ kind: "ok", text: "Key removed." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <Card
-      icon={<Brain className="h-5 w-5 text-brand-pink" />}
+      icon={
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.06]">
+          <Brain className="h-5 w-5 text-brand-pink" />
+        </span>
+      }
       title="Claude AI"
-      subtitle="Picks the best moments, keeps the speaker in frame, and writes YouTube titles & hashtags."
-      status={<StatusPill on={Boolean(a.source)} label={a.source ? "AI on" : "AI off"} />}
+      subtitle="Picks the best moments, keeps the speaker in frame, and writes titles & hashtags."
+      status={<StatusPill tone={a.source ? "on" : "off"} label={a.source ? "AI on" : "AI off"} />}
     >
       {a.source && (
         <div className="mb-4 flex items-center gap-3 rounded-xl bg-white/[0.03] px-3.5 py-2.5 text-sm ring-1 ring-white/5">
@@ -157,7 +408,12 @@ function AnthropicCard({ s, onSaved }: { s: Settings; onSaved: (s: Settings) => 
           <span className="font-mono text-ink-100">{a.hint}</span>
           <span className="text-ink-400">{a.source === "env" ? "from .env.local" : "saved on this computer"}</span>
           {a.source === "website" && (
-            <button onClick={remove} disabled={busy} className="ml-auto inline-flex items-center gap-1 text-xs text-ink-400 hover:text-rose-300">
+            <button
+              onClick={async () => {
+                if (confirm("Remove the saved Anthropic API key?")) onSaved(await saveSettings({ anthropicApiKey: "" }));
+              }}
+              className="ml-auto inline-flex items-center gap-1 text-xs text-ink-400 hover:text-rose-300"
+            >
               <Trash2 className="h-3.5 w-3.5" /> Remove
             </button>
           )}
@@ -170,143 +426,210 @@ function AnthropicCard({ s, onSaved }: { s: Settings; onSaved: (s: Settings) => 
           disabled={!key.trim() || busy}
           className="bg-brand flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
         >
-          {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+          {busy && <LoaderCircle className="h-4 w-4 animate-spin" />}
           {busy ? "Checking…" : "Save key"}
         </button>
       </form>
       <Notice msg={msg} />
-      <p className="mt-4 text-xs leading-relaxed text-ink-400">
-        Get a key at{" "}
-        <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-brand-pink underline">
-          console.anthropic.com <ExternalLink className="h-3 w-3" />
-        </a>{" "}
-        (add a little credit under Billing first). Usage is billed by Anthropic; each video typically costs a few cents. Model: {a.model}.
+      <p className="mt-4 text-sm text-ink-400">
+        Get a key at <A href="https://console.anthropic.com/settings/keys">console.anthropic.com</A> (add a little credit under Billing first).
+        Model: {a.model}.
       </p>
     </Card>
   );
 }
 
-function GoogleCard({ s, onSaved }: { s: Settings; onSaved: (s: Settings) => void }) {
-  const g = s.google;
-  const [clientId, setClientId] = useState("");
-  const [secret, setSecret] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<Msg>(null);
-  const ready = Boolean(g.clientId && g.secretSource);
+function YouTubeCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: () => void }) {
+  const p = c.platforms.youtube;
+  return (
+    <Card
+      icon={<PlatformBadge platform="youtube" size="lg" />}
+      title="YouTube Shorts"
+      subtitle="Uses a Google Cloud OAuth client."
+      status={<StatusPill tone={p.connected ? "on" : "off"} label={p.connected ? "Connected" : "Not connected"} />}
+    >
+      <AppKeys
+        idLabel="Client ID"
+        idPlaceholder="Client ID: 1234…apps.googleusercontent.com"
+        secretLabel="Client secret"
+        secretPlaceholder="Client secret: GOCSPX-…"
+        idField="googleClientId"
+        secretField="googleClientSecret"
+        currentId={s.google.clientId}
+        currentSecretHint={s.google.secretHint}
+        removable={s.google.clientIdSource === "website" || s.google.secretSource === "website"}
+        onSaved={onChange}
+      />
+      <ConnectRow
+        label="YouTube"
+        configured={p.configured}
+        connected={p.connected}
+        account={p.account}
+        connectHref="/api/youtube/connect?returnTo=/settings"
+        onDisconnect={async () => {
+          await fetch("/api/youtube/disconnect", { method: "POST" });
+          onChange();
+        }}
+      />
+      <Steps>
+        <li>
+          In <A href="https://console.cloud.google.com/projectcreate">Google Cloud Console</A>, create a project and enable the{" "}
+          <A href="https://console.cloud.google.com/apis/library/youtube.googleapis.com">YouTube Data API v3</A>.
+        </li>
+        <li>
+          Under <b>Google Auth Platform</b>, set the consent screen to <b>External</b> and add your Google account as a <b>Test user</b>.
+        </li>
+        <li>
+          Create a <b>Web application</b> OAuth client with this redirect URI:
+          <RedirectUri uri={c.youtube.redirectUri} />
+        </li>
+      </Steps>
+    </Card>
+  );
+}
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const body: Record<string, string> = {};
-    if (clientId.trim()) body.googleClientId = clientId;
-    if (secret.trim()) body.googleClientSecret = secret;
-    if (!Object.keys(body).length) return;
-    setBusy(true);
-    setMsg(null);
-    try {
-      const next = await save(body);
-      onSaved(next);
-      setClientId("");
-      setSecret("");
-      setMsg(
-        next.google.clientId && next.google.secretSource
-          ? { kind: "ok", text: "Saved. Open any finished video and click Connect YouTube." }
-          : { kind: "ok", text: "Saved. Add the other value too to finish." },
-      );
-    } catch (err) {
-      setMsg({ kind: "error", text: (err as Error).message });
-    } finally {
-      setBusy(false);
-    }
-  }
+function MetaCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: () => void }) {
+  const ig = c.platforms.instagram;
+  const fb = c.platforms.facebook;
+  const connected = fb.connected || ig.connected;
+  const [pageBusy, setPageBusy] = useState(false);
 
-  async function remove() {
-    if (!confirm("Remove the saved Google client ID and secret?")) return;
-    setBusy(true);
-    try {
-      onSaved(await save({ googleClientId: "", googleClientSecret: "" }));
-      setMsg({ kind: "ok", text: "Removed." });
-    } finally {
-      setBusy(false);
-    }
+  async function choosePage(pageId: string) {
+    setPageBusy(true);
+    await fetch("/api/connect/meta/page", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pageId }),
+    });
+    setPageBusy(false);
+    onChange();
   }
 
   return (
     <Card
-      icon={<VideoGlyph className="h-5 w-5 text-red-500" />}
-      title="YouTube publishing"
-      subtitle="A Google OAuth client lets the site upload Shorts to your channel."
-      status={<StatusPill on={ready} label={ready ? "Ready" : "Not set up"} />}
+      icon={
+        <span className="flex shrink-0 -space-x-2">
+          <PlatformBadge platform="instagram" size="lg" />
+          <PlatformBadge platform="facebook" size="lg" />
+        </span>
+      }
+      title="Instagram Reels & Facebook Reels"
+      subtitle="One Meta developer app covers both. Instagram must be a Business or Creator account linked to a Facebook Page."
+      status={<StatusPill tone={connected ? (ig.connected ? "on" : "warn") : "off"} label={connected ? (ig.connected ? "Connected" : "Facebook only") : "Not connected"} />}
     >
-      {(g.clientId || g.secretHint) && (
-        <div className="mb-4 space-y-1.5 rounded-xl bg-white/[0.03] px-3.5 py-2.5 text-sm ring-1 ring-white/5">
-          {g.clientId && (
-            <p className="truncate">
-              <span className="text-ink-400">Client ID: </span>
-              <span className="font-mono text-ink-100">{g.clientId}</span>
-            </p>
-          )}
-          {g.secretHint && (
-            <p>
-              <span className="text-ink-400">Secret: </span>
-              <span className="font-mono text-ink-100">{g.secretHint}</span>
-            </p>
-          )}
-          {(g.clientIdSource === "website" || g.secretSource === "website") && (
-            <button onClick={remove} disabled={busy} className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-rose-300">
-              <Trash2 className="h-3.5 w-3.5" /> Remove
-            </button>
-          )}
-        </div>
-      )}
-      <form onSubmit={submit} className="space-y-2">
-        <input
-          value={clientId}
-          onChange={(e) => setClientId(e.target.value)}
-          placeholder={g.clientId ? "New client ID (optional)" : "Client ID: 1234…apps.googleusercontent.com"}
-          aria-label="Google client ID"
-          autoComplete="off"
-          spellCheck={false}
-          className="h-11 w-full rounded-xl bg-ink-950/70 px-3.5 font-mono text-sm text-white ring-1 ring-white/10 placeholder:font-sans placeholder:text-ink-400 focus:outline-none focus:ring-brand-pink/60"
-        />
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <SecretInput value={secret} onChange={setSecret} placeholder={g.secretHint ? "New client secret (optional)" : "Client secret: GOCSPX-…"} label="Google client secret" />
-          <button
-            type="submit"
-            disabled={(!clientId.trim() && !secret.trim()) || busy}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-50"
+      <AppKeys
+        idLabel="App ID"
+        idPlaceholder="App ID: 1234567890123456"
+        secretLabel="App secret"
+        secretPlaceholder="App secret"
+        idField="metaAppId"
+        secretField="metaAppSecret"
+        currentId={s.meta.appId}
+        currentSecretHint={s.meta.secretHint}
+        removable={s.meta.saved}
+        onSaved={onChange}
+      />
+      <ConnectRow
+        label="Instagram & Facebook"
+        configured={fb.configured}
+        connected={connected}
+        account={[fb.account, ig.account].filter(Boolean).join(" · ")}
+        problem={fb.problem}
+        connectHref="/api/connect/meta?returnTo=/settings"
+        onDisconnect={async () => {
+          await fetch("/api/connect/meta/disconnect", { method: "POST" });
+          onChange();
+        }}
+      />
+      {connected && c.meta.pages.length > 0 && (
+        <label className="mt-3 flex flex-wrap items-center gap-3 text-sm text-ink-300">
+          Post as
+          <select
+            value={c.meta.selectedPageId || ""}
+            disabled={pageBusy}
+            onChange={(e) => choosePage(e.target.value)}
+            className="h-10 rounded-xl bg-ink-950/70 px-3 text-sm text-white ring-1 ring-white/10 focus:outline-none focus:ring-brand-pink/60"
           >
-            {busy && <LoaderCircle className="h-4 w-4 animate-spin" />} Save
-          </button>
-        </div>
-      </form>
-      <Notice msg={msg} />
-      <details className="mt-4 text-sm text-ink-300">
-        <summary className="cursor-pointer text-ink-200 hover:text-white">How to get these (about 5 minutes)</summary>
-        <ol className="mt-3 list-decimal space-y-2 pl-5 leading-relaxed marker:text-ink-400">
-          <li>
-            In{" "}
-            <a className="text-brand-pink underline" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">
-              Google Cloud Console
-            </a>
-            , create a project.
-          </li>
-          <li>
-            Enable the{" "}
-            <a className="text-brand-pink underline" href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">
-              YouTube Data API v3
-            </a>
-            .
-          </li>
-          <li>
-            Under <b>Google Auth Platform</b>, set up the consent screen as <b>External</b> and add your Google account as a <b>Test user</b>.
-          </li>
-          <li>
-            Under <b>Clients</b>, create a <b>Web application</b> client with this authorised redirect URI:
-            <code className="mt-1 block w-fit rounded-lg bg-black/40 px-2 py-1 text-xs text-ink-100">{g.redirectUri}</code>
-          </li>
-          <li>Copy the client ID and secret into the boxes above.</li>
-        </ol>
-      </details>
+            {c.meta.pages.map((pg) => (
+              <option key={pg.id} value={pg.id}>
+                {pg.name}
+                {pg.instagram ? ` + @${pg.instagram}` : " (no Instagram linked)"}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {ig.problem && connected && <p className="mt-3 text-sm text-amber-200">{ig.problem}</p>}
+      <Steps>
+        <li>
+          Make sure your Instagram is a <b>Business or Creator</b> account and is linked to a <b>Facebook Page</b> (Instagram app → Settings → Account type and tools).
+        </li>
+        <li>
+          At <A href="https://developers.facebook.com/apps/creation/">Meta for Developers</A>, create an app (type <b>Business</b>), then add the{" "}
+          <b>Facebook Login for Business</b> and <b>Instagram</b> products.
+        </li>
+        <li>
+          In Facebook Login settings, add this <b>Valid OAuth Redirect URI</b>:
+          <RedirectUri uri={c.meta.redirectUri} />
+        </li>
+        <li>
+          Keep the app in <b>Development</b> mode: as the app&apos;s admin you can post to your own accounts without App Review.
+        </li>
+        <li>
+          Copy the <b>App ID</b> and <b>App secret</b> from <b>App settings → Basic</b> into the fields above, then click Connect.
+        </li>
+      </Steps>
+    </Card>
+  );
+}
+
+function TikTokCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: () => void }) {
+  const p = c.platforms.tiktok;
+  return (
+    <Card
+      icon={<PlatformBadge platform="tiktok" size="lg" />}
+      title="TikTok"
+      subtitle="Uses TikTok's Content Posting API."
+      status={<StatusPill tone={p.connected ? "on" : "off"} label={p.connected ? "Connected" : "Not connected"} />}
+    >
+      <AppKeys
+        idLabel="Client key"
+        idPlaceholder="Client key"
+        secretLabel="Client secret"
+        secretPlaceholder="Client secret"
+        idField="tiktokClientKey"
+        secretField="tiktokClientSecret"
+        currentId={s.tiktok.clientKey}
+        currentSecretHint={s.tiktok.secretHint}
+        removable={s.tiktok.saved}
+        onSaved={onChange}
+      />
+      <ConnectRow
+        label="TikTok"
+        configured={p.configured}
+        connected={p.connected}
+        account={p.account}
+        connectHref="/api/connect/tiktok?returnTo=/settings"
+        onDisconnect={async () => {
+          await fetch("/api/connect/tiktok/disconnect", { method: "POST" });
+          onChange();
+        }}
+      />
+      <Steps>
+        <li>
+          At <A href="https://developers.tiktok.com/apps/">TikTok for Developers</A>, create an app and add <b>Login Kit</b> and the{" "}
+          <b>Content Posting API</b> (turn on <b>Direct Post</b>). Request the scopes <code>user.info.basic</code> and <code>video.publish</code>.
+        </li>
+        <li>
+          Add this redirect URI under Login Kit:
+          <RedirectUri uri={c.tiktok.redirectUri} />
+          If TikTok rejects a <code>localhost</code> address, set <code>APP_URL</code> to an https address that points to this site (for example a tunnel) and restart.
+        </li>
+        <li>
+          Until TikTok audits your app, it only allows <b>private</b> posts (&quot;Only me&quot;). You can change them to public in the TikTok app, or apply for the audit to post publicly.
+        </li>
+        <li>Copy the <b>Client key</b> and <b>Client secret</b> into the fields above, then click Connect.</li>
+      </Steps>
     </Card>
   );
 }

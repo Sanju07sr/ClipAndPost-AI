@@ -5,7 +5,9 @@ import { accessToken, GoogleAuthError, loadAccount } from "./google";
 import { writePublishMetaWithClaude } from "./ai";
 import { getJob, jobDir, updateJob } from "./store";
 import { parseJson3, wordsInRange } from "./transcript";
-import type { Clip, Privacy, PublishMeta } from "./types";
+import type { Clip, ClipUpload, PlatformId, Privacy, PublishMeta } from "./types";
+import { uploadFacebookReel, uploadInstagramReel, type PostResult } from "./platforms/meta";
+import { uploadTikTok } from "./platforms/tiktok";
 
 // ------------------------------------------------------------ Google API errors
 
@@ -170,28 +172,67 @@ export interface PublishItem {
   description: string;
   hashtags: string[];
   privacy: Privacy;
+  platforms: PlatformId[];
 }
 
-const g = globalThis as unknown as { __ytChain?: Promise<void> };
+// One upload at a time per platform; different platforms upload in parallel.
+const g = globalThis as unknown as { __uploadChains?: Partial<Record<PlatformId, Promise<void>>> };
+const chains = (g.__uploadChains ??= {});
 
 export function queueUploads(jobId: string, items: PublishItem[]) {
   for (const item of items) {
-    updateJob(jobId, (j) => {
-      const c = j.clips.find((x) => x.id === item.clipId);
-      if (c) c.upload = { status: "queued", progress: 0, privacy: item.privacy, title: item.title };
-    });
-    g.__ytChain = (g.__ytChain || Promise.resolve()).then(() =>
-      uploadClip(jobId, item).catch((err) => {
-        setUpload(jobId, item.clipId, { status: "error", error: (err as Error).message });
-      }),
-    );
+    for (const platform of item.platforms) {
+      updateJob(jobId, (j) => {
+        const c = j.clips.find((x) => x.id === item.clipId);
+        if (!c) return;
+        c.uploads = { ...c.uploads, [platform]: { status: "queued", progress: 0, privacy: item.privacy, title: item.title } };
+      });
+      chains[platform] = (chains[platform] || Promise.resolve()).then(() =>
+        uploadTo(platform, jobId, item).catch((err) => {
+          setUpload(jobId, item.clipId, platform, { status: "error", error: (err as Error).message });
+        }),
+      );
+    }
   }
 }
 
-function setUpload(jobId: string, clipId: string, patch: Partial<NonNullable<Clip["upload"]>>) {
+function setUpload(jobId: string, clipId: string, platform: PlatformId, patch: Partial<ClipUpload>) {
   updateJob(jobId, (j) => {
-    const c = j.clips.find((x) => x.id === clipId);
-    if (c?.upload) Object.assign(c.upload, patch);
+    const u = j.clips.find((x) => x.id === clipId)?.uploads?.[platform];
+    if (u) Object.assign(u, patch);
+  });
+}
+
+/** One caption for Instagram, Facebook and TikTok: title, description, hashtags. */
+export function socialCaption(item: Pick<PublishItem, "title" | "description" | "hashtags">) {
+  const tags = item.hashtags.map(cleanTag).filter(Boolean).slice(0, 25).map((h) => `#${h}`).join(" ");
+  return [item.title.trim(), item.description.trim(), tags].filter(Boolean).join("\n\n").slice(0, 2200);
+}
+
+async function uploadTo(platform: PlatformId, jobId: string, item: PublishItem) {
+  if (platform === "youtube") return uploadClip(jobId, item);
+  const clip = getJob(jobId)?.clips.find((c) => c.id === item.clipId);
+  if (!clip?.file) throw new Error("This clip's video file is missing");
+  const file = path.join(jobDir(jobId), path.basename(clip.file));
+  setUpload(jobId, item.clipId, platform, { status: "uploading", progress: 0 });
+  const progress = (p: number) => setUpload(jobId, item.clipId, platform, { progress: Math.round(p) });
+  const caption = socialCaption(item);
+  let result: PostResult;
+  let actualPrivacy = "public";
+  if (platform === "instagram") result = await uploadInstagramReel(file, caption, progress);
+  else if (platform === "facebook") result = await uploadFacebookReel(file, caption, progress);
+  else {
+    result = await uploadTikTok(file, caption, item.privacy === "public", progress);
+    if (result.note) actualPrivacy = "private";
+  }
+  setUpload(jobId, item.clipId, platform, {
+    status: "published",
+    progress: 100,
+    videoId: result.id,
+    url: result.url,
+    actualPrivacy: platform === "tiktok" ? actualPrivacy : "public",
+    note: result.note,
+    publishedAt: new Date().toISOString(),
   });
 }
 
@@ -203,7 +244,7 @@ async function uploadClip(jobId: string, item: PublishItem) {
   if (!job || !clip?.file) throw new Error("This clip's video file is missing");
   const file = path.join(jobDir(jobId), path.basename(clip.file));
   const size = fs.statSync(file).size;
-  setUpload(jobId, item.clipId, { status: "uploading", progress: 0 });
+  setUpload(jobId, item.clipId, "youtube", { status: "uploading", progress: 0 });
 
   const hashtags = item.hashtags.map(cleanTag).filter(Boolean);
   const hashtagLine = hashtags.map((h) => `#${h}`).join(" ");
@@ -269,7 +310,7 @@ async function uploadClip(jobId: string, item: PublishItem) {
         const range = res.headers.get("range");
         offset = range ? Number(range.split("-")[1]) + 1 : offset + len;
         retries = 0;
-        setUpload(jobId, item.clipId, { progress: Math.round((offset / size) * 100) });
+        setUpload(jobId, item.clipId, "youtube", { progress: Math.round((offset / size) * 100) });
         continue;
       }
       if (res.status >= 500 && ++retries <= 5) {
@@ -286,7 +327,7 @@ async function uploadClip(jobId: string, item: PublishItem) {
   }
   if (!result?.id) throw new Error("YouTube finished the upload but didn't return a video id");
 
-  setUpload(jobId, item.clipId, {
+  setUpload(jobId, item.clipId, "youtube", {
     status: "published",
     progress: 100,
     videoId: result.id,

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Flame, Hash, LoaderCircle, Plus, RefreshCw, Send, Sparkles, TriangleAlert, X } from "lucide-react";
-import type { Clip, Privacy, PublishMeta } from "@/lib/types";
+import { Check, Flame, Hash, LoaderCircle, Plus, RefreshCw, Send, Sparkles, TriangleAlert, X } from "lucide-react";
+import { PLATFORM_NAMES, type Clip, type PlatformId, type Privacy, type PublishMeta } from "@/lib/types";
+import { PlatformBadge } from "./PlatformBadge";
 
 interface Draft {
   clip: Clip;
@@ -16,7 +17,15 @@ interface Draft {
   writer?: PublishMeta["writer"];
 }
 
-export function PublishDialog(props: { jobId: string; clips: Clip[]; onClose: () => void; onPublished: () => void }) {
+export function PublishDialog(props: {
+  jobId: string;
+  clips: Clip[];
+  platforms: PlatformId[];
+  onClose: () => void;
+  onPublished: () => void;
+}) {
+  const [targets, setTargets] = useState<PlatformId[]>(props.platforms);
+  const toggleTarget = (p: PlatformId) => setTargets((t) => (t.includes(p) ? t.filter((x) => x !== p) : [...t, p]));
   const [drafts, setDrafts] = useState<Draft[]>(() =>
     props.clips.map((c) => ({
       clip: c,
@@ -94,6 +103,7 @@ export function PublishDialog(props: { jobId: string; clips: Clip[]; onClose: ()
             hashtags: d.hashtags,
             privacy,
           })),
+          platforms: targets,
         }),
       });
       const data = (await res.json()) as { error?: string };
@@ -106,13 +116,13 @@ export function PublishDialog(props: { jobId: string; clips: Clip[]; onClose: ()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label="Publish to YouTube">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label="Publish Shorts">
       <div className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-ink-900 shadow-2xl sm:rounded-3xl">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-white/5 px-5 py-4">
           <div className="min-w-0 flex-1">
             <h2 className="font-display text-lg font-semibold text-white">
-              Publish {drafts.length} Short{drafts.length === 1 ? "" : "s"} to YouTube
+              Publish {drafts.length} Short{drafts.length === 1 ? "" : "s"}
             </h2>
             <p className="text-xs text-ink-400">AI-written titles and trending hashtags. Edit anything before publishing.</p>
           </div>
@@ -141,6 +151,28 @@ export function PublishDialog(props: { jobId: string; clips: Clip[]; onClose: ()
               <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" /> {error}
             </p>
           )}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-sm text-ink-300">Post to</span>
+            {props.platforms.map((p) => {
+              const on = targets.includes(p);
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={on}
+                  onClick={() => toggleTarget(p)}
+                  className={`inline-flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm ring-1 transition ${
+                    on ? "bg-white/[0.08] text-white ring-white/30" : "text-ink-400 ring-white/10 opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <PlatformBadge platform={p} size="sm" />
+                  {PLATFORM_NAMES[p]}
+                  {on && <Check className="h-3.5 w-3.5 text-lime-400" />}
+                </button>
+              );
+            })}
+          </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] p-1 ring-1 ring-white/5">
               {(["public", "unlisted", "private"] as Privacy[]).map((p) => (
@@ -155,17 +187,27 @@ export function PublishDialog(props: { jobId: string; clips: Clip[]; onClose: ()
             </div>
             <button
               onClick={publish}
-              disabled={submitting || anyLoading || invalid}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-semibold text-white shadow-lg shadow-red-600/25 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={submitting || anyLoading || invalid || !targets.length}
+              className="bg-brand flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-semibold text-white shadow-lg shadow-brand-pink/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-              {anyLoading ? "Preparing titles & hashtags…" : privacy === "public" ? "Publish now" : `Upload as ${privacy}`}
+              {anyLoading
+                ? "Preparing titles & hashtags…"
+                : !targets.length
+                  ? "Choose where to post"
+                  : `${privacy === "public" ? "Publish" : `Upload as ${privacy}`} to ${targets.length === props.platforms.length && targets.length > 1 ? "all" : targets.map((t) => PLATFORM_NAMES[t]).join(" + ")}`}
             </button>
           </div>
-          <p className="text-xs text-ink-400">
-            Uploads use about 1,600 of your project&apos;s 10,000 daily YouTube API units each. New Google Cloud projects are
-            limited by YouTube to <b>private</b> uploads until the project passes YouTube&apos;s API audit.
-          </p>
+          <ul className="space-y-1 text-xs leading-relaxed text-ink-400">
+            <li>Instagram, Facebook and TikTok get one caption: the title, description and hashtags together.</li>
+            {targets.includes("youtube") && (
+              <li>YouTube: about 6 uploads a day on the free API quota; new Google projects upload as private until YouTube&apos;s API audit.</li>
+            )}
+            {(targets.includes("instagram") || targets.includes("facebook")) && privacy !== "public" && (
+              <li>Instagram and Facebook Reels are always public; the privacy choice applies to YouTube and TikTok.</li>
+            )}
+            {targets.includes("tiktok") && <li>TikTok: unaudited apps can only post privately (&quot;Only me&quot;).</li>}
+          </ul>
         </div>
       </div>
     </div>

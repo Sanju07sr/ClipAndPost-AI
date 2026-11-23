@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import {
   Check,
   CheckSquare,
-  CircleCheck,
   Copy,
   Download,
   ExternalLink,
@@ -14,7 +13,8 @@ import {
   Square,
   TriangleAlert,
 } from "lucide-react";
-import type { Clip, ClipUpload } from "@/lib/types";
+import { PLATFORM_NAMES, type Clip, type ClipUpload, type PlatformId } from "@/lib/types";
+import { PlatformBadge } from "./PlatformBadge";
 import { fmt, fmtBytes } from "./format";
 
 export function ClipCard({
@@ -142,7 +142,13 @@ export function ClipCard({
           </p>
         )}
 
-        {clip.upload && <UploadStatus upload={clip.upload} />}
+        {clip.uploads && Object.keys(clip.uploads).length > 0 && (
+          <div className="mt-4 space-y-2">
+            {(Object.entries(clip.uploads) as [PlatformId, ClipUpload][]).map(([p, u]) => (
+              <UploadStatus key={p} platform={p} upload={u} />
+            ))}
+          </div>
+        )}
 
         <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
           {ready ? (
@@ -222,46 +228,48 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-function UploadStatus({ upload }: { upload: ClipUpload }) {
+function UploadStatus({ platform, upload }: { platform: PlatformId; upload: ClipUpload }) {
+  const name = PLATFORM_NAMES[platform];
   if (upload.status === "queued" || upload.status === "uploading") {
     return (
-      <div className="mt-4 rounded-xl bg-red-500/10 p-3 ring-1 ring-red-500/20">
-        <p className="flex items-center gap-2 text-sm font-medium text-red-100">
-          <LoaderCircle className="h-4 w-4 animate-spin" />
-          {upload.status === "queued" ? "Waiting to upload…" : `Uploading to YouTube… ${upload.progress}%`}
+      <div className="rounded-xl bg-white/[0.04] p-3 ring-1 ring-white/10">
+        <p className="flex items-center gap-2 text-sm font-medium text-ink-100">
+          <PlatformBadge platform={platform} size="sm" />
+          {upload.status === "queued" ? `Waiting for ${name}…` : `Uploading to ${name}… ${upload.progress}%`}
+          <LoaderCircle className="ml-auto h-4 w-4 animate-spin text-ink-300" />
         </p>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-red-500 transition-[width] duration-500" style={{ width: `${Math.max(3, upload.progress)}%` }} />
+          <div className="bg-brand h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.max(3, upload.progress)}%` }} />
         </div>
       </div>
     );
   }
   if (upload.status === "error") {
     return (
-      <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-500/10 p-3 text-sm text-rose-200 ring-1 ring-rose-400/20">
-        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>
-          <b>Upload failed.</b> {upload.error} Select the Short again to retry.
+      <div className="flex items-start gap-2 rounded-xl bg-rose-500/10 p-3 text-sm text-rose-200 ring-1 ring-rose-400/20">
+        <PlatformBadge platform={platform} size="sm" />
+        <p className="min-w-0">
+          <b>{name} failed.</b> {upload.error} Select the Short again to retry.
         </p>
       </div>
     );
   }
-  const forcedPrivate = upload.actualPrivacy && upload.actualPrivacy !== upload.privacy;
+  const forced = upload.actualPrivacy && upload.actualPrivacy !== upload.privacy && upload.actualPrivacy !== "public";
   return (
-    <div className="mt-4 rounded-xl bg-lime-400/10 p-3 text-sm ring-1 ring-lime-400/20">
+    <div className="rounded-xl bg-lime-400/[0.08] p-3 text-sm ring-1 ring-lime-400/20">
       <p className="flex items-center gap-2 font-medium text-lime-100">
-        <CircleCheck className="h-4 w-4" />
-        {upload.actualPrivacy === "public" ? "Live on YouTube" : `Uploaded as ${upload.actualPrivacy}`}
+        <PlatformBadge platform={platform} size="sm" />
+        {upload.actualPrivacy === "public" || !upload.actualPrivacy ? `Live on ${name}` : `On ${name} (${upload.actualPrivacy})`}
         {upload.url && (
           <a href={upload.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-xs underline">
             View <ExternalLink className="h-3 w-3" />
           </a>
         )}
       </p>
-      {forcedPrivate && (
+      {(forced || upload.note) && (
         <p className="mt-1.5 text-xs text-amber-200">
-          YouTube made this video {upload.actualPrivacy} because your Google Cloud project hasn&apos;t passed YouTube&apos;s API audit
-          yet. You can make it public in YouTube Studio.
+          {upload.note ||
+            `${name} made this post ${upload.actualPrivacy} because your developer app hasn't passed its review yet. You can make it public in the ${name} app.`}
         </p>
       )}
     </div>

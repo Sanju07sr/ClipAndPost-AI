@@ -27,7 +27,7 @@ import {
 import type { Job, Stage, StageId } from "@/lib/types";
 import { ClipCard } from "./ClipCard";
 import { PublishDialog } from "./PublishDialog";
-import { YouTubeBar, useYouTubeStatus } from "./YouTubeBar";
+import { PublishBar, connectedPlatforms, useConnections } from "./PublishBar";
 import { fmt } from "./format";
 
 const CAPTION_LABELS: Record<string, string> = {
@@ -59,7 +59,7 @@ export function JobView({ id }: { id: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [publishing, setPublishing] = useState(false);
   const [pollKey, setPollKey] = useState(0);
-  const yt = useYouTubeStatus();
+  const { conn } = useConnections();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -75,7 +75,9 @@ export function JobView({ id }: { id: string }) {
         if (stop) return;
         setJob(data.job);
         setQueuePos(data.queuePosition);
-        const uploading = data.job.clips.some((c) => c.upload?.status === "queued" || c.upload?.status === "uploading");
+        const uploading = data.job.clips.some((c) =>
+          Object.values(c.uploads || {}).some((u) => u?.status === "queued" || u?.status === "uploading"),
+        );
         if ((data.job.status === "done" || data.job.status === "error") && !uploading) return;
       } catch {
         /* network blip: try again */
@@ -112,10 +114,14 @@ export function JobView({ id }: { id: string }) {
 
   const active = job.status === "running" || job.status === "queued";
   const doneClips = job.clips.filter((c) => c.status === "done");
-  const busyUpload = (c: Job["clips"][number]) => c.upload?.status === "queued" || c.upload?.status === "uploading";
-  const selectable = doneClips.filter((c) => !busyUpload(c) && c.upload?.status !== "published");
+  const busyUpload = (c: Job["clips"][number]) =>
+    Object.values(c.uploads || {}).some((u) => u?.status === "queued" || u?.status === "uploading");
+  const connected = connectedPlatforms(conn);
+  // A clip can still be selected while some connected platform doesn't have it yet.
+  const unpublished = (c: Job["clips"][number]) => connected.some((p) => c.uploads?.[p]?.status !== "published");
+  const selectable = doneClips.filter((c) => !busyUpload(c) && unpublished(c));
   const selectedClips = doneClips.filter((c) => selected.has(c.id));
-  const canSelect = Boolean(yt.status?.connected);
+  const canSelect = connected.length > 0;
   const toggle = (clipId: string) =>
     setSelected((s) => {
       const n = new Set(s);
@@ -294,13 +300,9 @@ export function JobView({ id }: { id: string }) {
             )}
           </div>
           {doneClips.length > 0 && (
-            <YouTubeBar
+            <PublishBar
               jobId={job.id}
-              status={yt.status}
-              onDisconnected={() => {
-                setSelected(new Set());
-                yt.reload();
-              }}
+              conn={conn}
               selectable={selectable.length}
               selected={selectedClips.length}
               onSelectAll={() => setSelected(new Set(selectable.map((c) => c.id)))}
@@ -316,7 +318,7 @@ export function JobView({ id }: { id: string }) {
                 clip={c}
                 rank={i + 1}
                 sourceUrl={o.url}
-                selectable={canSelect && c.status === "done" && !busyUpload(c) && c.upload?.status !== "published"}
+                selectable={canSelect && c.status === "done" && !busyUpload(c) && unpublished(c)}
                 selected={selected.has(c.id)}
                 onToggle={() => toggle(c.id)}
               />
@@ -326,6 +328,7 @@ export function JobView({ id }: { id: string }) {
             <PublishDialog
               jobId={job.id}
               clips={selectedClips}
+              platforms={connected}
               onClose={() => {
                 setPublishing(false);
                 setPollKey((k) => k + 1); // pick up generated metadata
