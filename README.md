@@ -52,7 +52,6 @@ Then:
 
 ```bash
 npm install
-cp .env.example .env.local      # add your ANTHROPIC_API_KEY
 npm run doctor                  # checks every tool is installed
 npm run dev                     # http://localhost:3000
 ```
@@ -66,7 +65,9 @@ docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-... -v clipforge-data:/data 
 
 ## Configuration
 
-Every setting is an environment variable; `.env.example` lists them all. The ones you're most likely to need:
+The easiest way to add your API keys is the **Settings** page in the website (gear icon, top right). Keys are checked before they're saved and are stored only on your computer, in `data/settings.json`.
+
+Every setting can also be an environment variable, set in `.env.local`; `.env.example` lists them all. Keys saved on the Settings page take priority. The ones you're most likely to need:
 
 | Variable | Default | Purpose |
 |---|---|---|

@@ -53,11 +53,15 @@ export function SetupNotice() {
     return (
       <div className="mx-auto mt-4 flex max-w-2xl items-start gap-2.5 rounded-xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-left text-sm text-amber-100">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>
-          Running without AI: add <code className="rounded bg-black/30 px-1">ANTHROPIC_API_KEY</code> to{" "}
-          <code className="rounded bg-black/30 px-1">.env.local</code> so Claude picks the moments and frames the speaker.
-          Until then a built-in picker is used.
+        <p className="flex-1">
+          Running without AI. Add your Anthropic API key so Claude picks the best moments and keeps the speaker in frame.
         </p>
+        <a
+          href="/settings"
+          className="shrink-0 rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-semibold text-ink-950 transition hover:bg-amber-200"
+        >
+          Add API key
+        </a>
       </div>
     );
   }

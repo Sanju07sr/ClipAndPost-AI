@@ -8,11 +8,29 @@ import type { ClipPlan, JobOptions, VideoInfo } from "./types";
 // Claude does two jobs here: choosing the best moments from the transcript,
 // and (optionally) looking at frames to decide where to crop for 9:16.
 
-let client: Anthropic | null = null;
+let client: { key: string; sdk: Anthropic } | null = null;
 function anthropic() {
-  // Resolves ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN from the environment.
-  client ??= new Anthropic({ maxRetries: 3 });
-  return client;
+  // The key can change at runtime from the Settings page, so rebuild the
+  // client when it does. With no key, the SDK falls back to ANTHROPIC_AUTH_TOKEN.
+  const key = config.anthropicApiKey;
+  if (!client || client.key !== key) {
+    client = { key, sdk: new Anthropic({ maxRetries: 3, ...(key ? { apiKey: key } : {}) }) };
+  }
+  return client.sdk;
+}
+
+/** Checks a key with a free API call. Returns an error message, or null if it works. */
+export async function checkAnthropicKey(apiKey: string): Promise<string | null> {
+  try {
+    await new Anthropic({ apiKey, maxRetries: 1, timeout: 20_000 }).models.retrieve(config.claudeModel);
+    return null;
+  } catch (err) {
+    if (err instanceof Anthropic.AuthenticationError) return "Anthropic rejected this key. Check that you copied all of it.";
+    if (err instanceof Anthropic.PermissionDeniedError) return "This key doesn't have access to the API. Check your Anthropic console.";
+    if (err instanceof Anthropic.NotFoundError) return null; // key works; model id just isn't listed for it
+    if (err instanceof Anthropic.APIConnectionError) return "Couldn't reach Anthropic to check the key. Check your internet connection.";
+    return (err as Error).message;
+  }
 }
 
 // Server-side fallback: if a request is declined, the API re-runs it on a

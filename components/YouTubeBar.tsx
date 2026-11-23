@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckSquare, ChevronDown, LoaderCircle, LogOut, Send, Square, TriangleAlert } from "lucide-react";
+import { CheckSquare, LoaderCircle, LogOut, Send, Square, TriangleAlert } from "lucide-react";
 import { VideoGlyph } from "./Logo";
 
 export interface YtStatus {
@@ -44,7 +44,7 @@ export function YouTubeBar(props: {
     const yt = url.searchParams.get("youtube");
     if (!yt) return;
     if (yt === "connected") setNotice({ kind: "ok", text: "YouTube connected. Select Shorts below and publish." });
-    else if (yt === "not-configured") setNotice({ kind: "error", text: "Add your Google OAuth keys first (steps below)." });
+    else if (yt === "not-configured") setNotice({ kind: "error", text: "Add your Google client ID and secret in Settings first." });
     else setNotice({ kind: "error", text: url.searchParams.get("youtube_error") || "Couldn't connect to YouTube." });
     url.searchParams.delete("youtube");
     url.searchParams.delete("youtube_error");
@@ -121,7 +121,14 @@ export function YouTubeBar(props: {
           >
             <VideoGlyph className="h-5 w-5" /> Connect YouTube
           </a>
-        ) : null}
+        ) : (
+          <a
+            href="/settings"
+            className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/25 transition hover:bg-red-500"
+          >
+            <VideoGlyph className="h-5 w-5" /> Set up YouTube
+          </a>
+        )}
       </div>
 
       {notice && (
@@ -138,59 +145,6 @@ export function YouTubeBar(props: {
         </div>
       )}
 
-      {status && !status.configured && <SetupSteps redirectUri={status.redirectUri} />}
     </section>
-  );
-}
-
-function SetupSteps({ redirectUri }: { redirectUri: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border-t border-white/5">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-5 py-3 text-left text-sm font-medium text-ink-200 hover:bg-white/[0.03]"
-      >
-        One-time setup: connect a Google Cloud project (about 5 minutes)
-        <ChevronDown className={`ml-auto h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <ol className="list-decimal space-y-2 px-5 pb-5 pl-10 text-sm leading-relaxed text-ink-300 marker:text-ink-400">
-          <li>
-            Open{" "}
-            <a className="text-brand-pink underline" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">
-              Google Cloud Console
-            </a>{" "}
-            and create a project (any name).
-          </li>
-          <li>
-            Enable the{" "}
-            <a
-              className="text-brand-pink underline"
-              href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
-              target="_blank"
-              rel="noreferrer"
-            >
-              YouTube Data API v3
-            </a>{" "}
-            for that project.
-          </li>
-          <li>
-            Under <b>Google Auth Platform → Branding/Audience</b>, set up the consent screen as <b>External</b> and add your own
-            Google account as a <b>Test user</b>.
-          </li>
-          <li>
-            Under <b>Clients</b>, create an OAuth client of type <b>Web application</b> with this authorised redirect URI:
-            <code className="mt-1 block w-fit rounded-lg bg-black/40 px-2 py-1 text-xs text-ink-100">{redirectUri}</code>
-          </li>
-          <li>
-            Put the client ID and secret in <code className="rounded bg-black/40 px-1">.env.local</code>, then restart the site:
-            <code className="mt-1 block w-fit whitespace-pre rounded-lg bg-black/40 px-2 py-1 text-xs text-ink-100">
-              {"GOOGLE_CLIENT_ID=...\nGOOGLE_CLIENT_SECRET=..."}
-            </code>
-          </li>
-        </ol>
-      )}
-    </div>
   );
 }
