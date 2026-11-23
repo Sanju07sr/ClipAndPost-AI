@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/Header";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 
 export const metadata: Metadata = {
   title: "ClipForge AI: YouTube to Shorts",
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-dvh">
         <div className="aurora" aria-hidden />
+        <AnimatedBackground />
         <div className="grid-bg" aria-hidden />
+        <div className="grain" aria-hidden />
         <Header />
         <main>{children}</main>
         <footer className="mx-auto mt-24 max-w-6xl px-4 pb-10 text-sm text-ink-400 sm:px-6">

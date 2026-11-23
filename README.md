@@ -25,12 +25,6 @@ Paste a YouTube link and get **YouTube Shorts of the video's best moments**: ver
 - **Seven caption styles:** Bold pop, Karaoke, Neon glow, Word reveal, One word, Comic and Minimal. Pick any highlight colour, and put captions in the lower third or the middle.
 - **Colour looks:** Vivid, Warm, Cool, B&W or Cinematic.
 - **Motion and branding:** a slow zoom-in, a progress bar, your @handle on screen, and an end card such as "Follow for more".
-- **Your avatar** as a round badge in a corner. Upload a photo and choose:
-  - *AI illustrated:* Claude draws a flat-vector avatar of you.
-  - *Cartoon:* a comic filter that works without an API key.
-  - *Photo:* your photo, framed.
-
-  Photos are processed and stored on your computer. The AI style sends the photo to Claude once.
 
 These options make your Shorts recognisably yours. They don't change who owns the footage: only clip videos you own or have permission to reuse.
 

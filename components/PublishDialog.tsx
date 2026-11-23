@@ -277,7 +277,7 @@ function DraftEditor(props: { jobId: string; draft: Draft; onChange: (p: Partial
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-3 text-[11px] text-ink-400">
+            <div className="flex items-center gap-3 text-xs text-ink-400">
               <span>
                 {d.writer === "claude" ? "Written by Claude" : "Basic metadata"}
                 {d.source === "youtube" ? " · trending data from YouTube" : ""}

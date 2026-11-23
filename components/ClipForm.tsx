@@ -16,13 +16,11 @@ import {
   SlidersHorizontal,
   Sparkles,
   Type,
-  UserRound,
   Wand2,
   ZoomIn,
 } from "lucide-react";
 import { youTubeId } from "@/lib/url";
-import type { AvatarPosition, CaptionPosition, CaptionStyle, Layout, Look } from "@/lib/types";
-import { AvatarPicker } from "./AvatarPicker";
+import type { CaptionPosition, CaptionStyle, Layout, Look } from "@/lib/types";
 
 const LENGTHS = [
   { id: "auto", label: "Auto", hint: "20–60s", min: 20, max: 60 },
@@ -59,8 +57,6 @@ interface Prefs {
   progressBar: boolean;
   handle: string;
   endCard: string;
-  useAvatar: boolean;
-  avatarPosition: AvatarPosition;
 }
 
 const DEFAULTS: Prefs = {
@@ -77,8 +73,6 @@ const DEFAULTS: Prefs = {
   progressBar: true,
   handle: "",
   endCard: "",
-  useAvatar: false,
-  avatarPosition: "top-left",
 };
 
 const PREFS_KEY = "clipforge:prefs";
@@ -89,7 +83,6 @@ export function ClipForm() {
   const [p, setP] = useState<Prefs>(DEFAULTS);
   const [instructions, setInstructions] = useState("");
   const [showSettings, setShowSettings] = useState(false);
-  const [hasAvatar, setHasAvatar] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,7 +104,7 @@ export function ClipForm() {
 
   const videoId = useMemo(() => youTubeId(url), [url]);
   const invalid = url.trim().length > 6 && !videoId;
-  const extrasOn = [p.look !== "none", p.zoom, p.handle.trim(), p.endCard.trim(), p.useAvatar && hasAvatar].filter(Boolean).length;
+  const extrasOn = [p.look !== "none", p.zoom, p.handle.trim(), p.endCard.trim()].filter(Boolean).length;
 
   async function paste() {
     try {
@@ -148,7 +141,6 @@ export function ClipForm() {
           progressBar: p.progressBar,
           handle: p.handle.trim(),
           endCard: p.endCard.trim(),
-          avatar: p.useAvatar && hasAvatar ? { position: p.avatarPosition } : null,
           instructions: instructions.trim() || undefined,
         }),
       });
@@ -237,7 +229,7 @@ export function ClipForm() {
               }`}
             >
               {l.label}
-              <span className={`hidden text-[10px] font-normal sm:block ${p.length === l.id ? "text-ink-600" : "text-ink-400"}`}>
+              <span className={`hidden text-xs font-normal sm:block ${p.length === l.id ? "text-ink-600" : "text-ink-400"}`}>
                 {l.hint}
               </span>
             </button>
@@ -251,7 +243,7 @@ export function ClipForm() {
         >
           <SlidersHorizontal className="h-4 w-4" /> Customize
           {extrasOn > 0 && (
-            <span className="bg-brand rounded-full px-1.5 text-[10px] font-bold text-white">{extrasOn}</span>
+            <span className="bg-brand rounded-full px-1.5 text-xs font-bold text-white">{extrasOn}</span>
           )}
           <ChevronDown className={`h-4 w-4 transition ${showSettings ? "rotate-180" : ""}`} />
         </button>
@@ -274,7 +266,7 @@ export function ClipForm() {
                 className="w-full"
                 aria-label="Number of Shorts"
               />
-              <div className="mt-1 flex justify-between text-[11px] text-ink-400">
+              <div className="mt-1 flex justify-between text-xs text-ink-400">
                 <span>1</span>
                 <span>10</span>
               </div>
@@ -437,17 +429,6 @@ export function ClipForm() {
               </div>
             </Field>
 
-            {/* ---------- Avatar */}
-            <Field icon={<UserRound className="h-4 w-4" />} label="Your avatar in the video" className="md:col-span-2">
-              <AvatarPicker
-                enabled={p.useAvatar}
-                onEnabledChange={(v) => set("useAvatar", v)}
-                position={p.avatarPosition}
-                onPositionChange={(v) => set("avatarPosition", v)}
-                onAvailabilityChange={setHasAvatar}
-              />
-            </Field>
-
             {/* ---------- AI */}
             <SectionHeading>AI</SectionHeading>
             <Toggle
@@ -546,7 +527,7 @@ function captionStyles(color: string): { id: CaptionStyle; label: string; sample
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <p className="-mb-1 mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-400 md:col-span-2">{children}</p>
+    <p className="-mb-1 mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-ink-400 md:col-span-2">{children}</p>
   );
 }
 
@@ -622,7 +603,7 @@ function LayoutOption(props: {
       <div className="h-12 w-7 shrink-0 rounded-md border border-white/20 p-[3px]">{props.preview}</div>
       <div>
         <div className="text-sm font-medium text-white">{props.title}</div>
-        <div className="text-[11px] leading-tight text-ink-400">{props.hint}</div>
+        <div className="text-xs leading-tight text-ink-400">{props.hint}</div>
       </div>
     </button>
   );

@@ -144,7 +144,7 @@ const LOOKS: Record<Exclude<Look, "none">, string> = {
 
 /**
  * Cut [offset, offset+duration] out of `input`, reframe to 1080x1920, apply
- * the look, zoom, avatar and progress bar, burn the captions, and normalise
+ * the look, zoom and progress bar, burn the captions, and normalise
  * loudness for Shorts (-14 LUFS).
  */
 export async function renderShort(opts: {
@@ -159,7 +159,6 @@ export async function renderShort(opts: {
   look?: Look;
   zoom?: boolean;
   progressBar?: { color: string } | null;
-  avatar?: { file: string; x: number; y: number; size: number } | null;
   onProgress?: (pct: number) => void;
 }): Promise<void> {
   const cwd = path.dirname(opts.output);
@@ -176,13 +175,6 @@ export async function renderShort(opts: {
   let last = "base";
 
   const inputs = ["-ss", opts.offset.toFixed(3), "-t", D, "-i", opts.input];
-  if (opts.avatar) {
-    inputs.push("-loop", "1", "-t", D, "-i", opts.avatar.file);
-    const a = opts.avatar;
-    graph.push(`[1:v]scale=${a.size}:${a.size},format=rgba,fade=in:st=0.2:d=0.4:alpha=1[av]`);
-    graph.push(`[${last}][av]overlay=${a.x}:${a.y}:shortest=1[withav]`);
-    last = "withav";
-  }
   if (opts.progressBar) {
     const c = /^#[0-9a-f]{6}$/i.test(opts.progressBar.color) ? `0x${opts.progressBar.color.slice(1)}` : "white";
     graph.push(`color=c=${c}@0.95:s=${OUT_W}x12:r=30:d=${D}[pb]`);

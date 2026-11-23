@@ -69,7 +69,7 @@ export function PhoneMocks() {
               </div>
             </div>
           </div>
-          <div className="glass absolute -bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold">
+          <div className="glass absolute -bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold">
             <span className="h-1.5 w-1.5 rounded-full bg-lime-400" />
             Virality {m.score}
           </div>

@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import fs from "node:fs";
-import path from "node:path";
-import { AVATAR_FILE, hasAvatar } from "@/lib/avatar";
-import { createJob, jobDir, listJobs } from "@/lib/store";
+import { createJob, listJobs } from "@/lib/store";
 import { enqueue } from "@/lib/pipeline";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
 import { DEFAULT_OPTIONS } from "@/lib/types";
@@ -32,7 +29,6 @@ const Body = z.object({
   progressBar: z.boolean().default(true),
   handle: z.string().trim().max(40).default(""),
   endCard: z.string().trim().max(60).default(""),
-  avatar: z.object({ position: z.enum(["top-left", "top-right"]) }).nullable().default(null),
   instructions: z.string().max(500).optional(),
 });
 
@@ -55,14 +51,7 @@ export async function POST(req: Request) {
   if (opts.minDuration + 5 > opts.maxDuration) {
     return NextResponse.json({ error: "The maximum length must be at least 5 seconds above the minimum." }, { status: 400 });
   }
-  if (opts.avatar && !hasAvatar()) {
-    return NextResponse.json({ error: "Upload a photo for your avatar first, or turn the avatar off." }, { status: 400 });
-  }
   const job = createJob({ ...opts, url });
-  if (opts.avatar) {
-    // Snapshot the avatar so later changes don't alter this job.
-    fs.copyFileSync(AVATAR_FILE(), path.join(jobDir(job.id), "avatar.png"));
-  }
   enqueue(job.id);
   return NextResponse.json({ id: job.id }, { status: 201 });
 }

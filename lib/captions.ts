@@ -1,4 +1,4 @@
-import type { AvatarPosition, CaptionPosition, CaptionStyle, Layout } from "./types";
+import type { CaptionPosition, CaptionStyle, Layout } from "./types";
 import type { Word } from "./transcript";
 
 // Builds an ASS subtitle file (rendered by ffmpeg/libass) with animated
@@ -110,12 +110,6 @@ function groupWords(words: Word[], spec: StyleSpec): Word[][] {
   return groups;
 }
 
-/** Where the avatar badge sits (shared with the renderer). */
-export const AVATAR_SIZE = 200;
-export function avatarBox(pos: AvatarPosition) {
-  return { x: pos === "top-left" ? 48 : W - 48 - AVATAR_SIZE, y: 150, size: AVATAR_SIZE };
-}
-
 export function buildAss(opts: {
   words: Word[];
   duration: number;
@@ -127,7 +121,6 @@ export function buildAss(opts: {
   position?: CaptionPosition;
   handle?: string;
   endCard?: string;
-  avatar?: AvatarPosition | null;
 }): string {
   const spec = opts.style === "none" ? null : STYLES[opts.style];
   const accent = assColour(opts.color);
@@ -135,8 +128,8 @@ export function buildAss(opts: {
   const font = opts.font;
   // Lower third by default; "middle" sits just below centre.
   const marginV = opts.position === "middle" ? 820 : opts.layout === "fill" ? 560 : 470;
-  // Keep the hook card clear of the avatar / handle in the top corners.
-  const topBusy = Boolean(opts.avatar || opts.handle?.trim());
+  // Keep the hook card clear of the @handle in the top corner.
+  const topBusy = Boolean(opts.handle?.trim());
   const hookMarginV = topBusy ? 450 : 250;
   const lines: string[] = [
     "[Script Info]",
@@ -172,18 +165,12 @@ export function buildAss(opts: {
     );
   }
 
-  // @handle: under the avatar, or in the top-left corner.
+  // @handle in the top-left corner.
   const handle = clean(opts.handle || "").replace(/^@?/, "@");
   if (handle.length > 1) {
-    let x = 56;
-    let y = 160;
-    let align = 7;
-    if (opts.avatar) {
-      const box = avatarBox(opts.avatar);
-      x = box.x + box.size / 2;
-      y = box.y + box.size + 14;
-      align = 8;
-    }
+    const x = 56;
+    const y = 160;
+    const align = 7;
     lines.push(`Dialogue: 2,${ts(0)},${ts(opts.duration)},Handle,,0,0,0,,{\\an${align}\\pos(${x},${y})\\alpha&H20&}${handle}`);
   }
 

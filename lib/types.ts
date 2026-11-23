@@ -4,7 +4,6 @@ export type Layout = "fill" | "fit";
 export type CaptionStyle = "bold" | "karaoke" | "minimal" | "neon" | "reveal" | "oneword" | "comic" | "none";
 export type CaptionPosition = "lower" | "middle";
 export type Look = "none" | "vivid" | "warm" | "cool" | "bw" | "cinematic";
-export type AvatarPosition = "top-left" | "top-right";
 
 export interface JobOptions {
   url: string;
@@ -34,8 +33,6 @@ export interface JobOptions {
   handle?: string;
   /** Text for an end card in the last seconds, e.g. "Follow for more". Empty = no end card. */
   endCard?: string;
-  /** Overlay the saved avatar badge; null/undefined = no avatar. */
-  avatar?: { position: AvatarPosition } | null;
   /** Optional free-text guidance, e.g. "funny moments only". */
   instructions?: string;
 }
@@ -154,5 +151,4 @@ export const DEFAULT_OPTIONS: Omit<JobOptions, "url"> = {
   progressBar: true,
   handle: "",
   endCard: "",
-  avatar: null,
 };

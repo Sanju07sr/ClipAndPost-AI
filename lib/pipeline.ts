@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
-import { avatarBox, buildAss } from "./captions";
+import { buildAss } from "./captions";
 import { findFocusWithClaude, pickMomentsWithClaude } from "./ai";
 import { dedupe, pickMomentsHeuristic, snapToSegments } from "./moments";
 import { extractFrames, ffmpegHasAss, loudnessPerSecond, makeThumbnail, probe, renderShort } from "./media";
@@ -272,8 +272,6 @@ async function processJob(id: string) {
       }
 
       const clipWords = wordsInRange(words, c.start, c.start + duration);
-      const avatarFile = path.join(dir, "avatar.png");
-      const avatarPos = options.avatar && fs.existsSync(avatarFile) ? options.avatar.position : null;
       const wantText =
         options.captionStyle !== "none" ||
         options.hookOverlay ||
@@ -299,7 +297,6 @@ async function processJob(id: string) {
               position: options.captionPosition,
               handle: options.handle,
               endCard: options.endCard,
-              avatar: avatarPos,
             })
           : null;
       const assFile = ass ? path.join(dir, `${c.id}.ass`) : null;
@@ -318,7 +315,6 @@ async function processJob(id: string) {
         look: options.look,
         zoom: options.zoom,
         progressBar: options.progressBar ? { color: options.captionColor || "#FFFFFF" } : null,
-        avatar: avatarPos ? { file: avatarFile, ...avatarBox(avatarPos) } : null,
         onProgress: (p) => progress(id, "render", base + (p / 100) * span * 0.95),
       });
       const thumb = path.join(dir, `${c.id}.jpg`);
