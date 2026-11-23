@@ -11,6 +11,13 @@ for (const f of [".env.local", ".env"]) {
   }
 }
 
+// Keys saved from the website's Settings page or home page.
+let saved = {};
+try {
+  saved = JSON.parse(fs.readFileSync(`${process.env.DATA_DIR || "data"}/settings.json`, "utf8"));
+} catch {}
+const aiKey = saved.anthropicApiKey || process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN;
+
 const checks = [
   ["Node.js >= 20", () => Number(process.versions.node.split(".")[0]) >= 20, process.versions.node, true],
   ["yt-dlp", ...tool(process.env.YTDLP_PATH || "yt-dlp", ["--version"]), true],
@@ -24,9 +31,11 @@ const checks = [
   ],
   ["deno (recommended by yt-dlp for YouTube)", ...tool("deno", ["--version"]), false],
   [
-    "ANTHROPIC_API_KEY (AI moment picking)",
-    () => Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
-    process.env.ANTHROPIC_API_KEY ? "set" : "not set: built-in picker will be used",
+    "Anthropic API key (Claude AI, optional)",
+    () => Boolean(aiKey),
+    aiKey
+      ? `set${saved.anthropicApiKey ? " in the website" : ""}`
+      : "optional: paste it in the website under the link box to turn on AI",
     false,
   ],
 ];
