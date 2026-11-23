@@ -16,6 +16,11 @@ Paste a YouTube link and get **YouTube Shorts of the video's best moments**: ver
    - Audio loudness normalised to −14 LUFS.
    - H.264/AAC MP4 with fast-start.
 
+6. **Publishes to YouTube (optional).** Connect your channel and select Shorts. For each one, the site:
+   - looks up which hashtags the most-viewed Shorts on that topic used in the last two weeks, using YouTube's own search data
+   - has Claude write the title and description, and pick hashtags that fit the clip
+   - lets you review and edit everything, then uploads with one click
+
 You can also tell the AI what to look for, for example "funny moments only" or "the best tips".
 
 **Without an `ANTHROPIC_API_KEY` the app still works.** A built-in picker scores moments by speech density, hook words, questions and audio energy, and crops to the centre.
@@ -24,7 +29,10 @@ You can also tell the AI what to look for, for example "funny moments only" or "
 
 Requirements:
 - **Node.js 20+**
-- **ffmpeg** (it must include libass, which standard builds do)
+- **ffmpeg** with libass, which draws the captions. On a Mac, Homebrew's default ffmpeg may leave it out. If `npm run doctor` shows a ✘ for captions, install the full build instead:
+  ```bash
+  brew tap homebrew-ffmpeg/ffmpeg && brew install homebrew-ffmpeg/ffmpeg/ffmpeg
+  ```
 - **yt-dlp**
 - **deno** (recommended: yt-dlp uses it to read YouTube's player)
 
@@ -65,10 +73,28 @@ Every setting is an environment variable; `.env.example` lists them all. The one
 | `ANTHROPIC_API_KEY` | none | Turns on AI moment picking and AI framing |
 | `CLAUDE_MODEL` | `claude-opus-5-5` | Model used for both AI steps |
 | `CLAUDE_EFFORT` | `medium` | How hard Claude thinks (`low` … `max`) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | none | Turns on YouTube publishing (see below) |
 | `YTDLP_COOKIES` | none | Path to a `cookies.txt`, for when YouTube asks the server to sign in |
 | `DATA_DIR` | `./data` | Where jobs and rendered clips are stored |
 | `MAX_CONCURRENT_JOBS` | `1` | Videos processed at the same time |
 | `FULL_DOWNLOAD` | `0` | Set to `1` to download whole videos instead of clip sections |
+
+### Publishing to YouTube
+
+One-time setup, about 5 minutes:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/projectcreate), create a project.
+2. Enable the **YouTube Data API v3** for it.
+3. Under **Google Auth Platform**, set up the consent screen as *External* and add your Google account as a *Test user*.
+4. Create an **OAuth client** of type *Web application*. Add `http://localhost:3000/api/youtube/callback` as an authorised redirect URI.
+5. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env.local` and restart the site.
+6. On any finished video, click **Connect YouTube**.
+
+YouTube limits that apply to every app:
+
+- **Uploads are private until your project is audited.** YouTube forces uploads from new Google Cloud projects to *private*. Fill in YouTube's [API audit form](https://support.google.com/youtube/contact/yt_api_form) to lift this; after approval, uploads go public instantly. Until then, the site shows "Uploaded as private" and you can make videos public in YouTube Studio.
+- **Quota:** each project gets 10,000 API units a day. An upload costs about 1,600 units and a trending-hashtag lookup about 100, so roughly 5–6 Shorts a day unless you request more quota.
+- **Reconnecting:** while the consent screen is in *Testing* mode, Google expires the sign-in after 7 days and you reconnect. Publishing the consent screen to *Production* removes this.
 
 ### "Sign in to confirm you're not a bot"
 
@@ -88,7 +114,9 @@ YouTube often blocks downloads from cloud servers.
 | `lib/pipeline.ts` | The five processing stages and the job queue |
 | `lib/youtube.ts` | yt-dlp: metadata, captions, section downloads |
 | `lib/transcript.ts` | Parses YouTube's json3 captions into timed words |
-| `lib/ai.ts` | Claude: moment picking and speaker framing |
+| `lib/ai.ts` | Claude: moment picking, speaker framing, Shorts metadata |
+| `lib/google.ts` | Google OAuth: connect, refresh, disconnect a YouTube channel |
+| `lib/publish.ts` | Trending hashtags, metadata, resumable YouTube uploads |
 | `lib/moments.ts` | Built-in picker, sentence snapping, overlap removal |
 | `lib/captions.ts` | Animated ASS caption files |
 | `lib/media.ts` | ffmpeg: reframing, rendering, thumbnails, loudness |
@@ -103,6 +131,9 @@ YouTube often blocks downloads from cloud servers.
 | `GET` | `/api/jobs/:id` | Job status, progress and clips |
 | `GET` | `/api/jobs/:id/clips/:clipId` | The MP4, with seeking support. Add `?download=1` to download it. |
 | `DELETE` | `/api/jobs/:id` | Deletes a finished job and its files |
+| `POST` | `/api/jobs/:id/clips/:clipId/metadata` | Writes a YouTube title, description and trending hashtags for a clip |
+| `POST` | `/api/jobs/:id/publish` | Uploads clips. Body: `{ items: [{ clipId, title, description, hashtags, privacy }] }` |
+| `GET` | `/api/youtube/connect` · `/api/youtube/status` | Connect a channel, or check the connection |
 
 ## Please note
 

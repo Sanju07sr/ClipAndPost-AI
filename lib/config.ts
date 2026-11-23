@@ -19,6 +19,17 @@ export const config = {
   claudeEffort: (process.env.CLAUDE_EFFORT || "medium") as "low" | "medium" | "high" | "xhigh" | "max",
   hasClaude: Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
   x264Preset: process.env.X264_PRESET || "veryfast",
+  // YouTube publishing (Google OAuth client from Google Cloud Console).
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+  googleRedirectUri:
+    process.env.GOOGLE_REDIRECT_URI || `http://localhost:${process.env.PORT || 3000}/api/youtube/callback`,
+  // Google endpoints; only overridden by tests that use a local mock server.
+  googleAuthUrl: process.env.GOOGLE_AUTH_URL || "https://accounts.google.com/o/oauth2/v2/auth",
+  googleTokenUrl: process.env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token",
+  googleRevokeUrl: process.env.GOOGLE_REVOKE_URL || "https://oauth2.googleapis.com/revoke",
+  youtubeApi: process.env.YOUTUBE_API_BASE || "https://www.googleapis.com/youtube/v3",
+  youtubeUploadApi: process.env.YOUTUBE_UPLOAD_BASE || "https://www.googleapis.com/upload/youtube/v3",
   captionFont: process.env.CAPTION_FONT || "Inter",
   fontsDir: process.env.FONTS_DIR || "",
 };

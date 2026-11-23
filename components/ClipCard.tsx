@@ -1,11 +1,39 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, Copy, Download, ExternalLink, Hash, LoaderCircle, Play, TriangleAlert } from "lucide-react";
-import type { Clip } from "@/lib/types";
+import {
+  Check,
+  CheckSquare,
+  CircleCheck,
+  Copy,
+  Download,
+  ExternalLink,
+  Hash,
+  LoaderCircle,
+  Play,
+  Square,
+  TriangleAlert,
+} from "lucide-react";
+import type { Clip, ClipUpload } from "@/lib/types";
 import { fmt, fmtBytes } from "./format";
 
-export function ClipCard({ jobId, clip, rank, sourceUrl }: { jobId: string; clip: Clip; rank: number; sourceUrl: string }) {
+export function ClipCard({
+  jobId,
+  clip,
+  rank,
+  sourceUrl,
+  selectable = false,
+  selected = false,
+  onToggle,
+}: {
+  jobId: string;
+  clip: Clip;
+  rank: number;
+  sourceUrl: string;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggle?: () => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const duration = clip.end - clip.start;
@@ -14,7 +42,11 @@ export function ClipCard({ jobId, clip, rank, sourceUrl }: { jobId: string; clip
   const caption = `${clip.description}\n\n${clip.hashtags.map((h) => `#${h}`).join(" ")}`;
 
   return (
-    <article className="glass group flex flex-col overflow-hidden rounded-3xl animate-fade-up">
+    <article
+      className={`glass group flex flex-col overflow-hidden rounded-3xl animate-fade-up transition ${
+        selected ? "!border-red-500/70 shadow-lg shadow-red-600/20" : ""
+      }`}
+    >
       {/* Player */}
       <div className="relative p-3 pb-0">
         <div className="relative mx-auto aspect-[9/16] w-full overflow-hidden rounded-2xl bg-ink-900 ring-1 ring-white/10">
@@ -61,9 +93,23 @@ export function ClipCard({ jobId, clip, rank, sourceUrl }: { jobId: string; clip
           {/* Overlays */}
           {!playing && (
             <>
-              <span className="absolute left-3 top-3 rounded-lg bg-black/60 px-2 py-1 font-display text-xs font-bold text-white backdrop-blur">
-                #{rank}
-              </span>
+              {selectable ? (
+                <button
+                  onClick={onToggle}
+                  role="checkbox"
+                  aria-checked={selected}
+                  aria-label={`Select "${clip.title}" for YouTube`}
+                  className={`absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold backdrop-blur transition ${
+                    selected ? "bg-red-600 text-white" : "bg-black/60 text-white hover:bg-black/80"
+                  }`}
+                >
+                  {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}#{rank}
+                </button>
+              ) : (
+                <span className="absolute left-3 top-3 rounded-lg bg-black/60 px-2 py-1 font-display text-xs font-bold text-white backdrop-blur">
+                  #{rank}
+                </span>
+              )}
               <span className="absolute bottom-3 right-3 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white backdrop-blur">
                 {fmt(duration)}
               </span>
@@ -95,6 +141,8 @@ export function ClipCard({ jobId, clip, rank, sourceUrl }: { jobId: string; clip
             ))}
           </p>
         )}
+
+        {clip.upload && <UploadStatus upload={clip.upload} />}
 
         <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
           {ready ? (
@@ -170,6 +218,52 @@ function ScoreRing({ score }: { score: number }) {
         />
       </svg>
       <span className="font-display text-sm font-bold text-white">{score}</span>
+    </div>
+  );
+}
+
+function UploadStatus({ upload }: { upload: ClipUpload }) {
+  if (upload.status === "queued" || upload.status === "uploading") {
+    return (
+      <div className="mt-4 rounded-xl bg-red-500/10 p-3 ring-1 ring-red-500/20">
+        <p className="flex items-center gap-2 text-sm font-medium text-red-100">
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+          {upload.status === "queued" ? "Waiting to upload…" : `Uploading to YouTube… ${upload.progress}%`}
+        </p>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-red-500 transition-[width] duration-500" style={{ width: `${Math.max(3, upload.progress)}%` }} />
+        </div>
+      </div>
+    );
+  }
+  if (upload.status === "error") {
+    return (
+      <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-500/10 p-3 text-sm text-rose-200 ring-1 ring-rose-400/20">
+        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <p>
+          <b>Upload failed.</b> {upload.error} Select the Short again to retry.
+        </p>
+      </div>
+    );
+  }
+  const forcedPrivate = upload.actualPrivacy && upload.actualPrivacy !== upload.privacy;
+  return (
+    <div className="mt-4 rounded-xl bg-lime-400/10 p-3 text-sm ring-1 ring-lime-400/20">
+      <p className="flex items-center gap-2 font-medium text-lime-100">
+        <CircleCheck className="h-4 w-4" />
+        {upload.actualPrivacy === "public" ? "Live on YouTube" : `Uploaded as ${upload.actualPrivacy}`}
+        {upload.url && (
+          <a href={upload.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-xs underline">
+            View <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </p>
+      {forcedPrivate && (
+        <p className="mt-1.5 text-xs text-amber-200">
+          YouTube made this video {upload.actualPrivacy} because your Google Cloud project hasn&apos;t passed YouTube&apos;s API audit
+          yet. You can make it public in YouTube Studio.
+        </p>
+      )}
     </div>
   );
 }

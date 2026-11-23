@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import type { Job, Stage, StageId } from "@/lib/types";
 import { ClipCard } from "./ClipCard";
+import { PublishDialog } from "./PublishDialog";
+import { YouTubeBar, useYouTubeStatus } from "./YouTubeBar";
 import { fmt } from "./format";
 
 const STAGE_ICONS: Record<StageId, typeof Brain> = {
@@ -43,6 +45,10 @@ export function JobView({ id }: { id: string }) {
   const [notFound, setNotFound] = useState(false);
   const [showLog, setShowLog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [publishing, setPublishing] = useState(false);
+  const [pollKey, setPollKey] = useState(0);
+  const yt = useYouTubeStatus();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -58,7 +64,8 @@ export function JobView({ id }: { id: string }) {
         if (stop) return;
         setJob(data.job);
         setQueuePos(data.queuePosition);
-        if (data.job.status === "done" || data.job.status === "error") return;
+        const uploading = data.job.clips.some((c) => c.upload?.status === "queued" || c.upload?.status === "uploading");
+        if ((data.job.status === "done" || data.job.status === "error") && !uploading) return;
       } catch {
         /* network blip: try again */
       }
@@ -69,7 +76,7 @@ export function JobView({ id }: { id: string }) {
       stop = true;
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [id]);
+  }, [id, pollKey]);
 
   if (notFound) {
     return (
@@ -94,6 +101,17 @@ export function JobView({ id }: { id: string }) {
 
   const active = job.status === "running" || job.status === "queued";
   const doneClips = job.clips.filter((c) => c.status === "done");
+  const busyUpload = (c: Job["clips"][number]) => c.upload?.status === "queued" || c.upload?.status === "uploading";
+  const selectable = doneClips.filter((c) => !busyUpload(c) && c.upload?.status !== "published");
+  const selectedClips = doneClips.filter((c) => selected.has(c.id));
+  const canSelect = Boolean(yt.status?.connected);
+  const toggle = (clipId: string) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      if (n.has(clipId)) n.delete(clipId);
+      else n.add(clipId);
+      return n;
+    });
   const o = job.options;
 
   async function remove() {
@@ -266,11 +284,50 @@ export function JobView({ id }: { id: string }) {
               </button>
             )}
           </div>
+          {doneClips.length > 0 && (
+            <YouTubeBar
+              jobId={job.id}
+              status={yt.status}
+              onDisconnected={() => {
+                setSelected(new Set());
+                yt.reload();
+              }}
+              selectable={selectable.length}
+              selected={selectedClips.length}
+              onSelectAll={() => setSelected(new Set(selectable.map((c) => c.id)))}
+              onClear={() => setSelected(new Set())}
+              onPublish={() => setPublishing(true)}
+            />
+          )}
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {job.clips.map((c, i) => (
-              <ClipCard key={c.id} jobId={job.id} clip={c} rank={i + 1} sourceUrl={o.url} />
+              <ClipCard
+                key={c.id}
+                jobId={job.id}
+                clip={c}
+                rank={i + 1}
+                sourceUrl={o.url}
+                selectable={canSelect && c.status === "done" && !busyUpload(c) && c.upload?.status !== "published"}
+                selected={selected.has(c.id)}
+                onToggle={() => toggle(c.id)}
+              />
             ))}
           </div>
+          {publishing && (
+            <PublishDialog
+              jobId={job.id}
+              clips={selectedClips}
+              onClose={() => {
+                setPublishing(false);
+                setPollKey((k) => k + 1); // pick up generated metadata
+              }}
+              onPublished={() => {
+                setPublishing(false);
+                setSelected(new Set());
+                setPollKey((k) => k + 1);
+              }}
+            />
+          )}
         </section>
       )}
 

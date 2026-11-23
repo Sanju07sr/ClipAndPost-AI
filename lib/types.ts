@@ -58,7 +58,37 @@ export interface ClipPlan {
 
 export type ClipStatus = "pending" | "downloading" | "rendering" | "done" | "error";
 
+export type Privacy = "public" | "unlisted" | "private";
+
+/** Metadata prepared for publishing a clip to YouTube. */
+export interface PublishMeta {
+  title: string;
+  description: string;
+  /** Hashtags without the # sign, most important first. */
+  hashtags: string[];
+  /** Hashtags popular on recent top Shorts about this topic, most popular first. */
+  trending: string[];
+  /** "youtube" when trending data came from YouTube search, else "none". */
+  trendingSource: "youtube" | "none";
+  writer: "claude" | "basic";
+}
+
+export interface ClipUpload {
+  status: "queued" | "uploading" | "published" | "error";
+  progress: number;
+  privacy: Privacy;
+  title: string;
+  videoId?: string;
+  url?: string;
+  /** Privacy YouTube actually applied (can differ: unverified apps are forced to private). */
+  actualPrivacy?: string;
+  error?: string;
+  publishedAt?: string;
+}
+
 export interface Clip extends ClipPlan {
+  meta?: PublishMeta;
+  upload?: ClipUpload;
   id: string;
   index: number;
   status: ClipStatus;

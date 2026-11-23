@@ -132,3 +132,52 @@ export async function findFocusWithClaude(framePaths: string[], title: string): 
   if (res.stop_reason === "refusal" || typeof x !== "number" || !Number.isFinite(x)) return null;
   return Math.max(0, Math.min(1, x));
 }
+
+const PublishSchema = z.object({
+  title: z.string().describe("YouTube Shorts title, 40-90 characters, no hashtags"),
+  description: z.string().describe("2-4 short lines: a hook line, what the viewer gets, a soft call to action. No hashtags."),
+  hashtags: z
+    .array(z.string())
+    .describe("4-7 hashtags without the # sign, most important first; the first three show above the title"),
+});
+
+/** Writes upload-ready Shorts metadata, preferring hashtags that are trending on YouTube right now. */
+export async function writePublishMetaWithClaude(input: {
+  videoTitle: string;
+  channel: string;
+  clip: ClipPlan;
+  transcript: string;
+  trending: string[];
+}): Promise<{ title: string; description: string; hashtags: string[] }> {
+  const trending = input.trending.length
+    ? `Hashtags used most by the most-viewed Shorts on this topic in the last 14 days (most popular first):\n${input.trending.map((t) => `#${t}`).join(" ")}`
+    : "No live trending data is available; choose hashtags people actually search for on this topic.";
+  const res = await anthropic().beta.messages.parse({
+    model: config.claudeModel,
+    max_tokens: 4000,
+    ...FALLBACK,
+    output_config: { effort: "low", format: betaZodOutputFormat(PublishSchema) },
+    system: `You write YouTube Shorts metadata that gets clicks and search traffic without being misleading.
+- Title: curiosity or a clear payoff, front-load the key words, sentence case, no clickbait lies, no hashtags.
+- Description: short and skimmable, in the same language as the clip.
+- Hashtags: mix 2-3 trending hashtags that genuinely fit this clip with 2-3 specific topic hashtags. Never use a trending hashtag that is unrelated to the clip. Do not include #shorts (it is added automatically).`,
+    messages: [
+      {
+        role: "user",
+        content: `Original video: "${input.videoTitle}" by ${input.channel}
+
+Clip draft title: ${input.clip.title}
+Clip hook: ${input.clip.hook}
+Why it works: ${input.clip.reason}
+
+<clip_transcript>
+${input.transcript || "(no transcript)"}
+</clip_transcript>
+
+${trending}`,
+      },
+    ],
+  });
+  if (res.stop_reason === "refusal" || !res.parsed_output) throw new Error("Claude couldn't write the metadata");
+  return res.parsed_output;
+}
