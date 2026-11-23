@@ -12,6 +12,7 @@ export interface SavedSettings {
   googleClientSecret?: string;
   metaAppId?: string;
   metaAppSecret?: string;
+  metaConfigId?: string;
 }
 
 export const SETTINGS_FILE = path.join(dataDir, "settings.json");
@@ -74,7 +75,11 @@ export const config = {
   get metaAppSecret(): string {
     return readSettings().metaAppSecret || process.env.META_APP_SECRET || "";
   },
-  graphVersion: process.env.META_GRAPH_VERSION || "v21.0",
+  /** Facebook Login for Business configuration ID (recommended by Meta instead of a scope list). */
+  get metaConfigId(): string {
+    return readSettings().metaConfigId || process.env.META_CONFIG_ID || "";
+  },
+  graphVersion: process.env.META_GRAPH_VERSION || "v27.0",
   // Meta endpoints; only overridden by tests that use a local mock server.
   metaGraph: process.env.META_GRAPH_BASE || "https://graph.facebook.com",
   metaDialog: process.env.META_DIALOG_BASE || "https://www.facebook.com",

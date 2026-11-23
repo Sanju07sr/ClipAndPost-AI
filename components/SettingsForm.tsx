@@ -19,7 +19,7 @@ import { PlatformBadge } from "./PlatformBadge";
 interface Settings {
   anthropic: { source: "website" | "env" | null; hint: string | null; model: string };
   google: { clientId: string | null; secretHint: string | null; clientIdSource: string | null; secretSource: string | null; redirectUri: string };
-  meta: { appId: string | null; secretHint: string | null; saved: boolean };
+  meta: { appId: string | null; secretHint: string | null; configId: string | null; saved: boolean };
 }
 
 interface Connections {
@@ -485,6 +485,197 @@ function YouTubeCard({ s, c, onChange }: { s: Settings; c: Connections; onChange
   );
 }
 
+function ConfigIdField({ current, onSaved }: { current: string | null; onSaved: () => void }) {
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<Msg>(null);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    try {
+      await saveSettings({ metaConfigId: value });
+      setValue("");
+      setMsg({ kind: "ok", text: value.trim() ? "Configuration ID saved." : "Configuration ID removed." });
+      onSaved();
+    } catch (err) {
+      setMsg({ kind: "error", text: (err as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <form onSubmit={submit} className="mt-3">
+      <label className="mb-1.5 block text-sm text-ink-300">
+        Configuration ID <span className="text-ink-400">(from Facebook Login for Business → Configurations; step 6 below)</span>
+      </label>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={current ? `Current: ${current}. Paste a new one to replace it` : "Configuration ID, e.g. 1234567890123456"}
+          aria-label="Configuration ID"
+          autoComplete="off"
+          spellCheck={false}
+          className={inputCls}
+        />
+        <button
+          type="submit"
+          disabled={busy || (!value.trim() && !current)}
+          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-ink-950 transition hover:bg-ink-100 disabled:opacity-40"
+        >
+          {busy && <LoaderCircle className="h-4 w-4 animate-spin" />}
+          {value.trim() || !current ? "Save ID" : "Remove ID"}
+        </button>
+      </div>
+      <Notice msg={msg} />
+    </form>
+  );
+}
+
+/** One numbered step in the Meta setup guide. */
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <li className="relative pl-11">
+      <span className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-white ring-1 ring-white/15">
+        {n}
+      </span>
+      <p className="font-semibold text-white">{title}</p>
+      <div className="mt-1.5 space-y-1.5 leading-relaxed text-ink-300">{children}</div>
+    </li>
+  );
+}
+
+const Btn = ({ children }: { children: React.ReactNode }) => (
+  <b className="rounded-md bg-white/[0.07] px-1.5 py-0.5 font-medium text-white ring-1 ring-white/10">{children}</b>
+);
+const Perm = ({ children }: { children: React.ReactNode }) => (
+  <code className="rounded bg-black/40 px-1.5 py-0.5 text-[0.85em] text-pink-200">{children}</code>
+);
+
+function MetaGuide({ redirectUri }: { redirectUri: string }) {
+  return (
+    <details className="group mt-5 rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.07] open:bg-white/[0.03]">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3.5 font-medium text-ink-100 hover:text-white">
+        Step-by-step setup guide (about 10 minutes)
+        <span className="ml-auto text-sm text-ink-400 group-open:hidden">Show</span>
+        <span className="ml-auto hidden text-sm text-ink-400 group-open:inline">Hide</span>
+      </summary>
+      <div className="border-t border-white/[0.06] px-4 pb-5 pt-4">
+        <p className="mb-5 text-sm text-ink-400">Based on Meta&apos;s current developer documentation (App Dashboard with use cases, Graph API v27.0).</p>
+        <ol className="space-y-6 text-[0.95rem]">
+          <Step n={1} title="Get your Instagram ready">
+            <p>
+              In the Instagram app: <Btn>Settings</Btn> → <Btn>Account type and tools</Btn> → switch to a <b>Professional</b> account
+              (Business or Creator). Then link it to your <b>Facebook Page</b> (in the Instagram app under <Btn>Accounts Center</Btn>, or
+              from your Facebook Page&apos;s settings → <Btn>Linked accounts</Btn>).
+            </p>
+          </Step>
+          <Step n={2} title="Create the app">
+            <p>
+              Go to <A href="https://developers.facebook.com/apps">developers.facebook.com/apps</A>, logged in with the Facebook account that
+              manages your Page, and click <Btn>Create App</Btn>.
+            </p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li>
+                <b>App details:</b> enter an app name (e.g. &quot;My Clipping Site&quot;) and your email → <Btn>Next</Btn>.
+              </li>
+              <li>
+                <b>Use cases:</b> tick <Btn>Manage everything on your Page</Btn> <b>and</b> <Btn>Manage messaging &amp; content on Instagram</Btn> →{" "}
+                <Btn>Next</Btn>. (If the second one is greyed out after picking the first, continue with one and add the other later from the
+                dashboard&apos;s <Btn>Use cases</Btn> page.)
+              </li>
+              <li>
+                <b>Business:</b> choose <Btn>I don&apos;t want to connect a business portfolio yet</Btn> → <Btn>Next</Btn>.
+              </li>
+              <li>
+                <b>Requirements:</b> <Btn>Next</Btn>. <b>Overview:</b> <Btn>Go to dashboard</Btn>.
+              </li>
+            </ul>
+          </Step>
+          <Step n={3} title="Add the Facebook Page permissions">
+            <p>
+              In the left menu open <Btn>Use cases</Btn>, find <b>Manage everything on your Page</b> and click <Btn>Customize</Btn>. Next to
+              these permissions click <Btn>Add</Btn>:
+            </p>
+            <p className="flex flex-wrap gap-1.5">
+              <Perm>pages_manage_posts</Perm>
+              <Perm>pages_read_engagement</Perm>
+            </p>
+            <p className="text-sm text-ink-400">
+              <Perm>pages_show_list</Perm> and <Perm>business_management</Perm> are already included.
+            </p>
+          </Step>
+          <Step n={4} title="Add the Instagram permissions">
+            <p>
+              Back in <Btn>Use cases</Btn>, click <Btn>Customize</Btn> on <b>Manage messaging &amp; content on Instagram</b>. Choose{" "}
+              <Btn>API setup with Facebook login</Btn> (not &quot;with Instagram login&quot;), then <Btn>Add</Btn>:
+            </p>
+            <p className="flex flex-wrap gap-1.5">
+              <Perm>instagram_basic</Perm>
+              <Perm>instagram_content_publish</Perm>
+              <Perm>pages_show_list</Perm>
+              <Perm>pages_read_engagement</Perm>
+            </p>
+          </Step>
+          <Step n={5} title="Add the redirect address">
+            <p>
+              In the left menu open <Btn>Facebook Login for Business</Btn> → <Btn>Settings</Btn>. Under <b>Client OAuth settings</b>, make sure{" "}
+              <b>Client OAuth login</b> and <b>Web OAuth login</b> are on, and add this to <b>Valid OAuth redirect URIs</b>, then{" "}
+              <Btn>Save changes</Btn>:
+            </p>
+            <RedirectUri uri={redirectUri} />
+            <p className="text-sm text-ink-400">
+              If Meta says the address must use https: localhost addresses work while the app is in Development mode, so you can continue.
+            </p>
+          </Step>
+          <Step n={6} title="Create a login configuration">
+            <p>
+              Open <Btn>Facebook Login for Business</Btn> → <Btn>Configurations</Btn> → <Btn>+ Create configuration</Btn>:
+            </p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li>Name it (e.g. &quot;Publish Reels&quot;).</li>
+              <li>
+                Access token: <Btn>User access token</Btn>, expiration <b>Never</b> (or 60 days).
+              </li>
+              <li>
+                Assets: select <b>Pages</b> and <b>Instagram accounts</b>.
+              </li>
+              <li>
+                Permissions: tick <Perm>pages_show_list</Perm> <Perm>pages_read_engagement</Perm> <Perm>pages_manage_posts</Perm>{" "}
+                <Perm>business_management</Perm> <Perm>instagram_basic</Perm> <Perm>instagram_content_publish</Perm> → <Btn>Create</Btn>.
+              </li>
+            </ul>
+            <p>
+              Copy the <b>Configuration ID</b> it shows and paste it into the Configuration ID box above.
+            </p>
+          </Step>
+          <Step n={7} title="Copy the App ID and App secret">
+            <p>
+              Left menu → <Btn>App settings</Btn> → <Btn>Basic</Btn>. Copy the <b>App ID</b> and click <Btn>Show</Btn> next to{" "}
+              <b>App secret</b>. Paste both into the boxes above and click <Btn>Save keys</Btn>.
+            </p>
+          </Step>
+          <Step n={8} title="Connect">
+            <p>
+              Click <Btn>Connect Instagram &amp; Facebook</Btn> above. In Meta&apos;s window, select your Page and Instagram account and allow every
+              permission (Meta grants none if any is unticked). You&apos;ll come back here showing your Page and @username.
+            </p>
+          </Step>
+          <Step n={9} title="Make your posts visible to everyone">
+            <p>
+              New apps start in <b>Development</b> mode, and Meta shows posts made by an app in Development mode only to people with a
+              role on the app (you). Post one test Short, then check it from another account. If others can&apos;t see it, switch the app to{" "}
+              <b>Live</b> with the <Btn>App Mode</Btn> switch at the top of the dashboard; Meta lists anything still missing there (usually a
+              Privacy Policy URL, and for some apps business verification). Posting to your own Page and Instagram doesn&apos;t need App Review.
+            </p>
+          </Step>
+        </ol>
+      </div>
+    </details>
+  );
+}
+
 function MetaCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: () => void }) {
   const ig = c.platforms.instagram;
   const fb = c.platforms.facebook;
@@ -526,6 +717,7 @@ function MetaCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: (
         removable={s.meta.saved}
         onSaved={onChange}
       />
+      {(s.meta.appId || s.meta.configId) && <ConfigIdField current={s.meta.configId} onSaved={onChange} />}
       <ConnectRow
         label="Instagram & Facebook"
         configured={fb.configured}
@@ -557,26 +749,7 @@ function MetaCard({ s, c, onChange }: { s: Settings; c: Connections; onChange: (
         </label>
       )}
       {ig.problem && connected && <p className="mt-3 text-sm text-amber-200">{ig.problem}</p>}
-      <Steps>
-        <li>
-          Make sure your Instagram is a <b>Business or Creator</b> account and is linked to a <b>Facebook Page</b> (Instagram app → Settings → Account type and tools).
-        </li>
-        <li>
-          Open <A href="https://developers.facebook.com/apps/">Meta for Developers → My Apps</A> (log in with the Facebook account that manages
-          your Page) and click <b>Create app</b>. Choose the use cases for <b>managing your Page</b> and <b>Instagram content</b> (or app type{" "}
-          <b>Business</b> if you&apos;re asked for a type), and make sure <b>Facebook Login</b> is added.
-        </li>
-        <li>
-          In Facebook Login settings, add this <b>Valid OAuth Redirect URI</b>:
-          <RedirectUri uri={c.meta.redirectUri} />
-        </li>
-        <li>
-          Keep the app in <b>Development</b> mode: as the app&apos;s admin you can post to your own accounts without App Review.
-        </li>
-        <li>
-          Copy the <b>App ID</b> and <b>App secret</b> from <b>App settings → Basic</b> into the fields above, then click Connect.
-        </li>
-      </Steps>
+      <MetaGuide redirectUri={c.meta.redirectUri} />
     </Card>
   );
 }

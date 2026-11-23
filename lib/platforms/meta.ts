@@ -52,13 +52,21 @@ async function graphFetch<T>(url: string, init?: RequestInit): Promise<T> {
 
 export function metaAuthUrl(state: string) {
   const u = new URL(`${config.metaDialog}/${config.graphVersion}/dialog/oauth`);
-  u.search = new URLSearchParams({
+  const params: Record<string, string> = {
     client_id: config.metaAppId,
     redirect_uri: metaRedirectUri(),
     state,
     response_type: "code",
-    scope: SCOPES.join(","),
-  }).toString();
+  };
+  // Facebook Login for Business: Meta recommends a configuration ID (which
+  // carries the permissions and assets) instead of a scope list.
+  if (config.metaConfigId) {
+    params.config_id = config.metaConfigId;
+    params.override_default_response_type = "true";
+  } else {
+    params.scope = SCOPES.join(",");
+  }
+  u.search = new URLSearchParams(params).toString();
   return u.toString();
 }
 

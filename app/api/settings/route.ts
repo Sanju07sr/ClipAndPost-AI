@@ -16,6 +16,7 @@ const Body = z.object({
   googleClientSecret: z.string().max(300).optional(),
   metaAppId: z.string().max(40).optional(),
   metaAppSecret: z.string().max(200).optional(),
+  metaConfigId: z.string().max(40).optional(),
 });
 
 export async function POST(req: Request) {
@@ -41,6 +42,10 @@ export async function POST(req: Request) {
   const appId = body.metaAppId?.trim();
   if (appId && !/^\d{5,25}$/.test(appId)) {
     return NextResponse.json({ error: "A Meta App ID is a long number, shown at the top of your app's dashboard." }, { status: 400 });
+  }
+  const configId = body.metaConfigId?.trim();
+  if (configId && !/^\d{5,25}$/.test(configId)) {
+    return NextResponse.json({ error: "A Configuration ID is a long number, shown under Facebook Login for Business → Configurations." }, { status: 400 });
   }
   saveSettings(body);
   return NextResponse.json(publicSettings());

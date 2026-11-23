@@ -41,7 +41,8 @@ export function publicSettings() {
     meta: {
       appId: config.metaAppId || null, // not secret
       secretHint: config.metaAppSecret ? mask(config.metaAppSecret) : null,
-      saved: Boolean(s.metaAppId || s.metaAppSecret),
+      configId: config.metaConfigId || null, // not secret
+      saved: Boolean(s.metaAppId || s.metaAppSecret || s.metaConfigId),
     },
   };
 }
