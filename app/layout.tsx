@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
+import { Toaster } from "@/components/Toaster";
 
 export const metadata: Metadata = {
   title: "ClipForge AI: YouTube to Shorts",
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="grain" aria-hidden />
         <Header />
         <main>{children}</main>
+        <Toaster />
         <footer className="mx-auto mt-24 max-w-6xl px-4 pb-10 text-sm text-ink-400 sm:px-6">
           <div className="flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 sm:flex-row">
             <p>ClipForge AI · Turn long videos into Shorts</p>

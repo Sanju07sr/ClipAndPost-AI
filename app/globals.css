@@ -176,3 +176,45 @@ input[type="range"] {
   opacity: 0.05;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+
+/* Toasts */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.toast-in { animation: toast-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Processing illustration */
+@keyframes pv-film { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.pv-film { animation: pv-film 9s linear infinite; }
+@keyframes pv-scan { 0% { top: -2.5rem; } 100% { top: 100%; } }
+.pv-scan { animation: pv-scan 2.4s ease-in-out infinite; }
+@keyframes pv-crop {
+  0%, 100% { border-color: rgb(255 255 255 / 0.85); box-shadow: 0 0 0 0 rgb(236 72 153 / 0); }
+  50% { border-color: rgb(236 72 153 / 0.95); box-shadow: 0 0 18px 0 rgb(236 72 153 / 0.45); }
+}
+.pv-crop { animation: pv-crop 2.4s ease-in-out infinite; }
+@keyframes pv-word {
+  0%, 10% { opacity: 0; transform: scale(0.6); }
+  18% { opacity: 1; transform: scale(1.12); color: #fde047; }
+  26%, 80% { opacity: 1; transform: scale(1); }
+  92%, 100% { opacity: 0; transform: scale(1); }
+}
+.pv-word { display: inline-block; opacity: 0; animation: pv-word 2.7s ease-out infinite; }
+@keyframes pv-done { from { opacity: 0; } to { opacity: 1; } }
+.pv-done { animation: pv-done 0.4s ease-out both; }
+@keyframes pv-check { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+.pv-check { stroke-dasharray: 24; animation: pv-check 0.5s 0.2s ease-out both; }
+@keyframes pv-bar { 0%, 100% { height: 25%; } 50% { height: 100%; } }
+.pv-bar { height: 25%; animation: pv-bar 0.9s ease-in-out infinite; }
+
+/* Progress bar sheen while working */
+@keyframes bar-sheen { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.bar-sheen { animation: bar-sheen 1.8s ease-in-out infinite; }
+
+/* Rotating hero highlight */
+@keyframes hero-hl {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.hero-hl { animation: hero-hl 0.45s ease-out both; }

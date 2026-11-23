@@ -1,5 +1,6 @@
-import { Brain, Captions, Crop, Download, Flame, Link2, ScanFace, Scissors, Sparkles, Volume2, Wand2, Zap } from "lucide-react";
+import { Brain, Captions, Crop, Flame, Link2, ScanFace, Scissors, Send, Volume2, Wand2, Zap } from "lucide-react";
 import { ClipForm } from "@/components/ClipForm";
+import { HeroHighlights } from "@/components/HeroHighlights";
 import { PhoneMocks } from "@/components/PhoneMock";
 import { RecentJobs } from "@/components/RecentJobs";
 import { SetupNotice } from "@/components/SetupNotice";
@@ -8,7 +9,7 @@ const STEPS = [
   { icon: Link2, title: "Paste a link", text: "Any YouTube video, podcast, stream VOD or lecture." },
   { icon: Brain, title: "AI finds the moments", text: "Claude reads the full transcript and ranks the most clip-worthy moments." },
   { icon: Crop, title: "Reframed to 9:16", text: "Cut on sentence boundaries, cropped around the speaker, captions burned in." },
-  { icon: Download, title: "Download & post", text: "1080×1920 MP4s with a title, description and hashtags ready to paste." },
+  { icon: Send, title: "Publish or download", text: "Post to YouTube, Instagram and Facebook in one click, or download the HD MP4s." },
 ];
 
 const FEATURES = [
@@ -19,7 +20,7 @@ const FEATURES = [
   { icon: Scissors, title: "Clean cuts", text: "Clips start and end on full sentences, never mid-word or mid-thought." },
   { icon: Volume2, title: "Loudness normalised", text: "Audio levelled to −14 LUFS, the loudness YouTube plays Shorts at." },
   { icon: Zap, title: "Only what's needed", text: "Downloads just the clip sections, so a 3-hour podcast doesn't take 3 hours." },
-  { icon: Sparkles, title: "Tell it what you want", text: "“Funny moments only” or “the best tips”: the AI follows your direction." },
+  { icon: Send, title: "Publish everywhere", text: "Post to YouTube Shorts, Instagram Reels and Facebook Reels in one click, with notifications when they're live." },
 ];
 
 export default function Home() {
@@ -27,13 +28,8 @@ export default function Home() {
     <div className="mx-auto max-w-6xl px-4 sm:px-6">
       {/* Hero */}
       <section id="create" className="grid scroll-mt-24 items-start gap-10 pt-12 sm:pt-20 lg:grid-cols-[1.15fr_1fr]">
-        <div className="animate-fade-up">
-          <div className="glass mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-ink-200">
-            <span className="bg-brand flex h-4 w-4 items-center justify-center rounded-full">
-              <Sparkles className="h-2.5 w-2.5 text-white" />
-            </span>
-            Powered by Claude · YouTube Shorts in minutes
-          </div>
+        <div className="animate-fade-up min-w-0">
+          <HeroHighlights />
           <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl">
             One long video.
             <br />
@@ -48,9 +44,9 @@ export default function Home() {
             <SetupNotice />
           </div>
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-400">
-            <span>✓ 1080×1920 MP4</span>
+            <span>✓ 1080×1920 HD Shorts</span>
             <span>✓ Up to 10 clips per video</span>
-            <span>✓ 15 seconds to 3 minutes</span>
+            <span>✓ Publish to 3 platforms at once</span>
           </div>
         </div>
         <div className="hidden pt-10 lg:sticky lg:top-24 lg:block">

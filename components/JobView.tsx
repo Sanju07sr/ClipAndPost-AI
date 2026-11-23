@@ -24,8 +24,10 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
-import type { Job, PlatformId, Stage, StageId } from "@/lib/types";
+import { PLATFORM_NAMES, type Job, type PlatformId, type Stage, type StageId } from "@/lib/types";
 import { ClipCard } from "./ClipCard";
+import { ProcessingVisual } from "./ProcessingVisual";
+import { notify, requestDesktopNotifications } from "./Toaster";
 import { PublishDialog } from "./PublishDialog";
 import { PublishBar, connectedPlatforms, useConnections } from "./PublishBar";
 import { fmt } from "./format";
@@ -66,6 +68,11 @@ export function JobView({ id }: { id: string }) {
     if (conn && targets === null) setTargets(connectedPlatforms(conn));
   }, [conn, targets]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevJob = useRef<Job | null>(null);
+  // Results collected across polls for the current publishing batch.
+  const batch = useRef<Batch>({ published: [], failed: 0 });
+  // Keep the progress panel up briefly at 100% after a job finishes.
+  const [justFinished, setJustFinished] = useState(false);
 
   useEffect(() => {
     let stop = false;
@@ -78,6 +85,11 @@ export function JobView({ id }: { id: string }) {
         }
         const data = (await res.json()) as { job: Job; queuePosition: number };
         if (stop) return;
+        announceChanges(prevJob.current, data.job, batch.current, () => {
+          setJustFinished(true);
+          setTimeout(() => setJustFinished(false), 9000);
+        });
+        prevJob.current = data.job;
         setJob(data.job);
         setQueuePos(data.queuePosition);
         const uploading = data.job.clips.some((c) =>
@@ -118,6 +130,10 @@ export function JobView({ id }: { id: string }) {
   }
 
   const active = job.status === "running" || job.status === "queued";
+  const showProgress = active || (justFinished && job.status === "done");
+  const finished = !active && job.status === "done";
+  const shownProgress = finished ? 100 : job.progress;
+  const currentStage = job.stages.find((st) => st.status === "running")?.id ?? null;
   const doneClips = job.clips.filter((c) => c.status === "done");
   const busyUpload = (c: Job["clips"][number]) =>
     Object.values(c.uploads || {}).some((u) => u?.status === "queued" || u?.status === "uploading");
@@ -226,26 +242,48 @@ export function JobView({ id }: { id: string }) {
       </section>
 
       {/* Progress */}
-      {active && (
-        <section className="glass ring-brand mt-6 rounded-3xl p-5 sm:p-7" aria-live="polite">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm text-ink-300">
-                {job.status === "queued" && queuePos > 0 ? `Queued: ${queuePos} ahead of you` : job.message}
-              </p>
-              <p className="mt-1 font-display text-5xl font-bold tabular-nums text-white">{job.progress}%</p>
+      {showProgress && (
+        <section
+          className={`glass mt-6 rounded-3xl p-5 transition sm:p-7 ${finished ? "ring-2 ring-lime-400/40" : "ring-brand"}`}
+          aria-live="polite"
+        >
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            <ProcessingVisual stage={currentStage} done={finished} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className={`text-sm ${finished ? "text-lime-200" : "text-ink-300"}`}>
+                    {finished
+                      ? `All done! ${job.clips.filter((c) => c.status === "done").length} Shorts are ready below.`
+                      : job.status === "queued" && queuePos > 0
+                        ? `Queued: ${queuePos} ahead of you`
+                        : job.message}
+                  </p>
+                  <p className="mt-1 font-display text-5xl font-bold tabular-nums text-white">{shownProgress}%</p>
+                </div>
+                {finished ? (
+                  <CircleCheck className="mb-2 h-8 w-8 text-lime-400" />
+                ) : (
+                  <LoaderCircle className="mb-2 h-7 w-7 animate-spin text-brand-pink" />
+                )}
+              </div>
+              <div className="relative mt-5 h-3 overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className={`relative h-full overflow-hidden rounded-full transition-[width] duration-700 ease-out ${
+                    finished ? "bg-gradient-to-r from-lime-400 to-emerald-400" : "bg-brand"
+                  }`}
+                  style={{ width: `${Math.max(3, shownProgress)}%` }}
+                >
+                  {!finished && <span className="bar-sheen absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" />}
+                </div>
+              </div>
             </div>
-            <LoaderCircle className="mb-2 h-7 w-7 animate-spin text-brand-pink" />
-          </div>
-          <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white/[0.06]">
-            <div
-              className="bg-brand h-full rounded-full transition-[width] duration-700 ease-out"
-              style={{ width: `${Math.max(3, job.progress)}%` }}
-            />
           </div>
           <Stepper stages={job.stages} />
           <p className="mt-5 text-xs text-ink-400">
-            You can leave this page; processing continues on the server. Longer videos take a few minutes.
+            {finished
+              ? "Your Shorts are below. Select the ones you want and publish them."
+              : "You can leave this page; processing continues on the server, and you'll get a notification when it's done."}
           </p>
         </section>
       )}
@@ -313,7 +351,10 @@ export function JobView({ id }: { id: string }) {
               selected={selectedClips.length}
               onSelectAll={() => setSelected(new Set(selectable.map((c) => c.id)))}
               onClear={() => setSelected(new Set())}
-              onPublish={() => setPublishing(true)}
+              onPublish={() => {
+                requestDesktopNotifications();
+                setPublishing(true);
+              }}
             />
           )}
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -417,4 +458,65 @@ function StatusIcon({ status }: { status: Stage["status"] }) {
   if (status === "skipped") return <CircleMinus className="h-4 w-4 text-amber-300" />;
   if (status === "error") return <TriangleAlert className="h-4 w-4 text-rose-400" />;
   return <Circle className="h-4 w-4 text-ink-600" />;
+}
+
+/**
+ * Compare two polls of a job and notify about what just happened: Shorts
+ * finished rendering, a platform finished publishing, or everything is done.
+ */
+interface Batch {
+  published: string[];
+  failed: number;
+}
+
+function announceChanges(prev: Job | null, next: Job, batch: Batch, onFinished: () => void) {
+  if (!prev) return; // first load: nothing "just happened"
+  const wasActive = prev.status === "running" || prev.status === "queued";
+  if (wasActive && next.status === "done") {
+    const n = next.clips.filter((c) => c.status === "done").length;
+    notify({
+      kind: "celebrate",
+      title: `${n} Short${n === 1 ? " is" : "s are"} ready!`,
+      body: next.video?.title ? `From "${next.video.title}". Select them below to publish.` : "Select them below to publish.",
+    });
+    onFinished();
+  } else if (wasActive && next.status === "error") {
+    notify({ kind: "error", title: "Couldn't finish this video", body: next.error });
+  }
+
+  const busy = (u?: { status: string }) => u?.status === "queued" || u?.status === "uploading";
+  for (const c of next.clips) {
+    const before = prev.clips.find((x) => x.id === c.id);
+    for (const [p, u] of Object.entries(c.uploads || {}) as [PlatformId, NonNullable<Job["clips"][number]["uploads"]>[PlatformId]][]) {
+      if (!u || !(p in PLATFORM_NAMES) || !busy(before?.uploads?.[p])) continue;
+      const name = PLATFORM_NAMES[p];
+      if (u.status === "published") {
+        batch.published.push(name);
+        notify({
+          kind: "success",
+          title: `Published on ${name}`,
+          body: `"${u.title || c.title}"${u.actualPrivacy && u.actualPrivacy !== "public" ? ` (${u.actualPrivacy})` : ""}`,
+          link: u.url ? { href: u.url, label: `View on ${name}` } : undefined,
+        });
+      } else if (u.status === "error") {
+        batch.failed++;
+        notify({ kind: "error", title: `${name} upload failed`, body: u.error });
+      }
+    }
+  }
+  const stillBusy = next.clips.some((c) => Object.values(c.uploads || {}).some((u) => busy(u)));
+  const wasBusy = prev.clips.some((c) => Object.values(c.uploads || {}).some((u) => busy(u)));
+  if (wasBusy && !stillBusy) {
+    const { published, failed } = batch;
+    const total = published.length;
+    batch.published = [];
+    batch.failed = 0;
+    notify({
+      kind: failed ? "info" : "celebrate",
+      title: failed ? "Publishing finished with problems" : "All done: your Shorts are live!",
+      body: failed
+        ? `${failed} upload${failed === 1 ? "" : "s"} failed. See the cards below.`
+        : `${total} post${total === 1 ? "" : "s"} published${published.length ? ` on ${[...new Set(published)].join(", ")}` : ""}.`,
+    });
+  }
 }

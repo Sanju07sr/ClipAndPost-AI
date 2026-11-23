@@ -20,6 +20,7 @@ import {
   ZoomIn,
 } from "lucide-react";
 import { youTubeId } from "@/lib/url";
+import { requestDesktopNotifications } from "./Toaster";
 import type { CaptionPosition, CaptionStyle, Layout, Look } from "@/lib/types";
 
 const LENGTHS = [
@@ -118,6 +119,7 @@ export function ClipForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!videoId || submitting) return;
+    requestDesktopNotifications(); // so we can tell them when the Shorts are ready
     setSubmitting(true);
     setError(null);
     const len = LENGTHS.find((l) => l.id === p.length)!;

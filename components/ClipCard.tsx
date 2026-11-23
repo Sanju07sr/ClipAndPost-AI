@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { PLATFORM_NAMES, type Clip, type ClipUpload, type PlatformId } from "@/lib/types";
 import { PlatformBadge } from "./PlatformBadge";
+import { WorkingBars } from "./ProcessingVisual";
 import { fmt, fmtBytes } from "./format";
 
 export function ClipCard({
@@ -106,8 +107,10 @@ export function ClipCard({
                 </>
               ) : (
                 <>
-                  <LoaderCircle className="h-6 w-6 animate-spin text-brand-pink" />
-                  {clip.status === "downloading" ? "Downloading…" : clip.status === "rendering" ? "Rendering…" : "Waiting…"}
+                  <WorkingBars />
+                  <span className="font-medium text-ink-100">
+                    {clip.status === "downloading" ? "Downloading footage…" : clip.status === "rendering" ? "Cutting & captioning…" : "In line…"}
+                  </span>
                 </>
               )}
             </div>
