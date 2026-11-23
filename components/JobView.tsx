@@ -30,6 +30,17 @@ import { PublishDialog } from "./PublishDialog";
 import { YouTubeBar, useYouTubeStatus } from "./YouTubeBar";
 import { fmt } from "./format";
 
+const CAPTION_LABELS: Record<string, string> = {
+  bold: "Bold pop captions",
+  karaoke: "Karaoke captions",
+  minimal: "Minimal captions",
+  neon: "Neon glow captions",
+  reveal: "Word reveal captions",
+  oneword: "One-word captions",
+  comic: "Comic captions",
+  none: "No captions",
+};
+
 const STAGE_ICONS: Record<StageId, typeof Brain> = {
   metadata: Link2,
   transcript: FileText,
@@ -173,9 +184,7 @@ export function JobView({ id }: { id: string }) {
             </Chip>
             <Chip icon={<Crop className="h-3.5 w-3.5" />}>{o.layout === "fill" ? "Fill crop" : "Fit + blur"}</Chip>
             <Chip icon={<Captions className="h-3.5 w-3.5" />}>
-              {o.captionStyle === "none"
-                ? "No captions"
-                : `${o.captionStyle.charAt(0).toUpperCase()}${o.captionStyle.slice(1)} captions`}
+              {CAPTION_LABELS[o.captionStyle] ?? o.captionStyle}
             </Chip>
             {job.picker && (
               <Chip icon={<Brain className="h-3.5 w-3.5" />}>

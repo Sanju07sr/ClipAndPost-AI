@@ -1,7 +1,10 @@
 // Shared types used by the server pipeline and the browser UI.
 
 export type Layout = "fill" | "fit";
-export type CaptionStyle = "bold" | "karaoke" | "minimal" | "none";
+export type CaptionStyle = "bold" | "karaoke" | "minimal" | "neon" | "reveal" | "oneword" | "comic" | "none";
+export type CaptionPosition = "lower" | "middle";
+export type Look = "none" | "vivid" | "warm" | "cool" | "bw" | "cinematic";
+export type AvatarPosition = "top-left" | "top-right";
 
 export interface JobOptions {
   url: string;
@@ -18,6 +21,21 @@ export interface JobOptions {
   captionStyle: CaptionStyle;
   /** Show the clip's hook as a title card for the first seconds. */
   hookOverlay: boolean;
+  /** Highlight colour for captions, as #RRGGBB. */
+  captionColor?: string;
+  captionPosition?: CaptionPosition;
+  /** Colour grade applied to the whole clip. */
+  look?: Look;
+  /** Slow zoom-in over the clip for a sense of motion. */
+  zoom?: boolean;
+  /** Thin progress bar along the bottom edge. */
+  progressBar?: boolean;
+  /** "@handle" shown small near the top. */
+  handle?: string;
+  /** Text for an end card in the last seconds, e.g. "Follow for more". Empty = no end card. */
+  endCard?: string;
+  /** Overlay the saved avatar badge; null/undefined = no avatar. */
+  avatar?: { position: AvatarPosition } | null;
   /** Optional free-text guidance, e.g. "funny moments only". */
   instructions?: string;
 }
@@ -129,4 +147,12 @@ export const DEFAULT_OPTIONS: Omit<JobOptions, "url"> = {
   captionStyle: "bold",
   hookOverlay: true,
   instructions: "",
+  captionColor: "#FFE500",
+  captionPosition: "lower",
+  look: "none",
+  zoom: false,
+  progressBar: true,
+  handle: "",
+  endCard: "",
+  avatar: null,
 };

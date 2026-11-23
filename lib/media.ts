@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
 import { run } from "./exec";
-import type { Layout } from "./types";
+import type { Layout, Look } from "./types";
 
 export const OUT_W = 1080;
 export const OUT_H = 1920;
@@ -134,9 +134,18 @@ function videoFilter(layout: Layout, src: { width: number; height: number }, foc
   return `scale=${sw}:${sh},crop=${OUT_W}:${OUT_H}:${x}:${Math.max(0, y)}`;
 }
 
+const LOOKS: Record<Exclude<Look, "none">, string> = {
+  vivid: "eq=saturation=1.35:contrast=1.08",
+  warm: "colorbalance=rs=0.08:gs=0.02:bs=-0.08:rm=0.05:bm=-0.05,eq=saturation=1.1",
+  cool: "colorbalance=rs=-0.06:bs=0.08:bm=0.05,eq=saturation=1.05",
+  bw: "hue=s=0,eq=contrast=1.15",
+  cinematic: "eq=contrast=1.12:saturation=0.9,colorbalance=rs=-0.05:bs=0.06:rh=0.06:bh=-0.04,vignette=PI/5",
+};
+
 /**
- * Cut [offset, offset+duration] out of `input`, reframe to 1080x1920, burn the
- * captions and normalise loudness for Shorts (-14 LUFS).
+ * Cut [offset, offset+duration] out of `input`, reframe to 1080x1920, apply
+ * the look, zoom, avatar and progress bar, burn the captions, and normalise
+ * loudness for Shorts (-14 LUFS).
  */
 export async function renderShort(opts: {
   input: string;
@@ -147,30 +156,48 @@ export async function renderShort(opts: {
   layout: Layout;
   focusX: number;
   src: Probe;
+  look?: Look;
+  zoom?: boolean;
+  progressBar?: { color: string } | null;
+  avatar?: { file: string; x: number; y: number; size: number } | null;
   onProgress?: (pct: number) => void;
 }): Promise<void> {
   const cwd = path.dirname(opts.output);
-  let vf = videoFilter(opts.layout, opts.src, opts.focusX);
-  vf += ",setsar=1,format=yuv420p";
+  const D = opts.duration.toFixed(3);
+  const graph: string[] = [];
+
+  let base = `[0:v]${videoFilter(opts.layout, opts.src, opts.focusX)},setsar=1`;
+  if (opts.zoom) {
+    // Slow push-in to 108% over the clip.
+    base += `,scale=w='trunc(${OUT_W}*(1+0.08*t/${D})/2)*2':h=-2:eval=frame,crop=${OUT_W}:${OUT_H},setsar=1`;
+  }
+  if (opts.look && opts.look !== "none") base += `,${LOOKS[opts.look]}`;
+  graph.push(`${base}[base]`);
+  let last = "base";
+
+  const inputs = ["-ss", opts.offset.toFixed(3), "-t", D, "-i", opts.input];
+  if (opts.avatar) {
+    inputs.push("-loop", "1", "-t", D, "-i", opts.avatar.file);
+    const a = opts.avatar;
+    graph.push(`[1:v]scale=${a.size}:${a.size},format=rgba,fade=in:st=0.2:d=0.4:alpha=1[av]`);
+    graph.push(`[${last}][av]overlay=${a.x}:${a.y}:shortest=1[withav]`);
+    last = "withav";
+  }
+  if (opts.progressBar) {
+    const c = /^#[0-9a-f]{6}$/i.test(opts.progressBar.color) ? `0x${opts.progressBar.color.slice(1)}` : "white";
+    graph.push(`color=c=${c}@0.95:s=${OUT_W}x12:r=30:d=${D}[pb]`);
+    graph.push(`[${last}][pb]overlay=x='-W+W*t/${D}':y=H-h[withpb]`);
+    last = "withpb";
+  }
+  let tail = `[${last}]format=yuv420p`;
   if (opts.assFile) {
     // Relative file name + cwd avoids filter-path escaping issues.
     const fontsdir = config.fontsDir ? `:fontsdir=${config.fontsDir.replace(/[:\\']/g, "\\$&")}` : "";
-    vf += `,ass=filename=${path.basename(opts.assFile)}${fontsdir}`;
+    tail += `,ass=filename=${path.basename(opts.assFile)}${fontsdir}`;
   }
-  const args = [
-    "-hide_banner",
-    "-y",
-    "-ss",
-    opts.offset.toFixed(3),
-    "-t",
-    opts.duration.toFixed(3),
-    "-i",
-    opts.input,
-    "-filter_complex",
-    `[0:v]${vf}[v]`,
-    "-map",
-    "[v]",
-  ];
+  graph.push(`${tail}[v]`);
+
+  const args = ["-hide_banner", "-y", ...inputs, "-filter_complex", graph.join(";"), "-map", "[v]"];
   if (opts.src.hasAudio) {
     args.push("-map", "0:a:0", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "160k");
   }
@@ -183,6 +210,8 @@ export async function renderShort(opts: {
     "20",
     "-profile:v",
     "high",
+    "-t",
+    D,
     "-movflags",
     "+faststart",
     path.basename(opts.output),

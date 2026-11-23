@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
-import { buildAss } from "./captions";
+import { avatarBox, buildAss } from "./captions";
 import { findFocusWithClaude, pickMomentsWithClaude } from "./ai";
 import { dedupe, pickMomentsHeuristic, snapToSegments } from "./moments";
 import { extractFrames, ffmpegHasAss, loudnessPerSecond, makeThumbnail, probe, renderShort } from "./media";
@@ -272,7 +272,13 @@ async function processJob(id: string) {
       }
 
       const clipWords = wordsInRange(words, c.start, c.start + duration);
-      const wantText = options.captionStyle !== "none" || options.hookOverlay;
+      const avatarFile = path.join(dir, "avatar.png");
+      const avatarPos = options.avatar && fs.existsSync(avatarFile) ? options.avatar.position : null;
+      const wantText =
+        options.captionStyle !== "none" ||
+        options.hookOverlay ||
+        Boolean(options.handle?.trim()) ||
+        Boolean(options.endCard?.trim());
       const canText = wantText && (await ffmpegHasAss());
       if (wantText && !canText && i === 0) {
         log(id, "Captions skipped: this ffmpeg was built without libass. See the setup notice on the home page to fix it.");
@@ -289,6 +295,11 @@ async function processJob(id: string) {
               layout: options.layout,
               hook: options.hookOverlay ? c.hook : undefined,
               font: config.captionFont,
+              color: options.captionColor,
+              position: options.captionPosition,
+              handle: options.handle,
+              endCard: options.endCard,
+              avatar: avatarPos,
             })
           : null;
       const assFile = ass ? path.join(dir, `${c.id}.ass`) : null;
@@ -304,6 +315,10 @@ async function processJob(id: string) {
         layout: options.layout,
         focusX,
         src: meta,
+        look: options.look,
+        zoom: options.zoom,
+        progressBar: options.progressBar ? { color: options.captionColor || "#FFFFFF" } : null,
+        avatar: avatarPos ? { file: avatarFile, ...avatarBox(avatarPos) } : null,
         onProgress: (p) => progress(id, "render", base + (p / 100) * span * 0.95),
       });
       const thumb = path.join(dir, `${c.id}.jpg`);

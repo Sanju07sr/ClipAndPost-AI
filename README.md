@@ -21,6 +21,19 @@ Paste a YouTube link and get **YouTube Shorts of the video's best moments**: ver
    - has Claude write the title and description, and pick hashtags that fit the clip
    - lets you review and edit everything, then uploads with one click
 
+**Make it yours** (all under *Customize*):
+- **Seven caption styles:** Bold pop, Karaoke, Neon glow, Word reveal, One word, Comic and Minimal. Pick any highlight colour, and put captions in the lower third or the middle.
+- **Colour looks:** Vivid, Warm, Cool, B&W or Cinematic.
+- **Motion and branding:** a slow zoom-in, a progress bar, your @handle on screen, and an end card such as "Follow for more".
+- **Your avatar** as a round badge in a corner. Upload a photo and choose:
+  - *AI illustrated:* Claude draws a flat-vector avatar of you.
+  - *Cartoon:* a comic filter that works without an API key.
+  - *Photo:* your photo, framed.
+
+  Photos are processed and stored on your computer. The AI style sends the photo to Claude once.
+
+These options make your Shorts recognisably yours. They don't change who owns the footage: only clip videos you own or have permission to reuse.
+
 You can also tell the AI what to look for, for example "funny moments only" or "the best tips".
 
 **Without an `ANTHROPIC_API_KEY` the app still works.** A built-in picker scores moments by speech density, hook words, questions and audio energy, and crops to the centre.
