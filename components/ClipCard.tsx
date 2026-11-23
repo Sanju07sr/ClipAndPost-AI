@@ -3,14 +3,12 @@
 import { useRef, useState } from "react";
 import {
   Check,
-  CheckSquare,
   Copy,
   Download,
   ExternalLink,
   Hash,
   LoaderCircle,
   Play,
-  Square,
   TriangleAlert,
 } from "lucide-react";
 import { PLATFORM_NAMES, type Clip, type ClipUpload, type PlatformId } from "@/lib/types";
@@ -44,9 +42,33 @@ export function ClipCard({
   return (
     <article
       className={`glass group flex flex-col overflow-hidden rounded-3xl animate-fade-up transition ${
-        selected ? "!border-red-500/70 shadow-lg shadow-red-600/20" : ""
+        selected ? "!border-transparent shadow-xl shadow-brand-pink/20 ring-2 ring-brand-pink" : ""
       }`}
     >
+      {/* Selection bar: big and obvious, stays visible while the video plays */}
+      {selectable && (
+        <button
+          type="button"
+          onClick={onToggle}
+          role="checkbox"
+          aria-checked={selected}
+          aria-label={`Select "${clip.title}" to publish`}
+          className={`flex w-full items-center gap-3 px-4 py-3 text-left font-medium transition ${
+            selected ? "bg-brand text-white" : "bg-white/[0.04] text-ink-100 hover:bg-white/[0.08]"
+          }`}
+        >
+          <span
+            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition ${
+              selected ? "border-white bg-white text-brand-pink" : "border-ink-300 bg-black/30"
+            }`}
+          >
+            {selected && <Check className="h-4 w-4 text-pink-600" strokeWidth={3.5} />}
+          </span>
+          {selected ? "Selected for publishing" : "Select to publish"}
+          <span className={`ml-auto text-sm ${selected ? "text-white/85" : "text-ink-400"}`}>#{rank}</span>
+        </button>
+      )}
+
       {/* Player */}
       <div className="relative p-3 pb-0">
         <div className="relative mx-auto aspect-[9/16] w-full overflow-hidden rounded-2xl bg-ink-900 ring-1 ring-white/10">
@@ -93,23 +115,9 @@ export function ClipCard({
           {/* Overlays */}
           {!playing && (
             <>
-              {selectable ? (
-                <button
-                  onClick={onToggle}
-                  role="checkbox"
-                  aria-checked={selected}
-                  aria-label={`Select "${clip.title}" for YouTube`}
-                  className={`absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold backdrop-blur transition ${
-                    selected ? "bg-red-600 text-white" : "bg-black/60 text-white hover:bg-black/80"
-                  }`}
-                >
-                  {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}#{rank}
-                </button>
-              ) : (
-                <span className="absolute left-3 top-3 rounded-lg bg-black/60 px-2 py-1 font-display text-xs font-bold text-white backdrop-blur">
-                  #{rank}
-                </span>
-              )}
+              <span className="absolute left-3 top-3 rounded-lg bg-black/60 px-2 py-1 font-display text-xs font-bold text-white backdrop-blur">
+                #{rank}
+              </span>
               <span className="absolute bottom-3 right-3 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white backdrop-blur">
                 {fmt(duration)}
               </span>

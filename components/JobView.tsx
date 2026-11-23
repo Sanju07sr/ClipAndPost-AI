@@ -24,7 +24,7 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
-import type { Job, Stage, StageId } from "@/lib/types";
+import type { Job, PlatformId, Stage, StageId } from "@/lib/types";
 import { ClipCard } from "./ClipCard";
 import { PublishDialog } from "./PublishDialog";
 import { PublishBar, connectedPlatforms, useConnections } from "./PublishBar";
@@ -60,6 +60,11 @@ export function JobView({ id }: { id: string }) {
   const [publishing, setPublishing] = useState(false);
   const [pollKey, setPollKey] = useState(0);
   const { conn } = useConnections();
+  // Where to publish: starts as every connected platform; the user can narrow it to one.
+  const [targets, setTargets] = useState<PlatformId[] | null>(null);
+  useEffect(() => {
+    if (conn && targets === null) setTargets(connectedPlatforms(conn));
+  }, [conn, targets]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -301,8 +306,9 @@ export function JobView({ id }: { id: string }) {
           </div>
           {doneClips.length > 0 && (
             <PublishBar
-              jobId={job.id}
               conn={conn}
+              targets={targets ?? []}
+              onTargetsChange={setTargets}
               selectable={selectable.length}
               selected={selectedClips.length}
               onSelectAll={() => setSelected(new Set(selectable.map((c) => c.id)))}
@@ -328,7 +334,9 @@ export function JobView({ id }: { id: string }) {
             <PublishDialog
               jobId={job.id}
               clips={selectedClips}
-              platforms={connected}
+              states={conn!.platforms}
+              targets={targets ?? []}
+              onTargetsChange={setTargets}
               onClose={() => {
                 setPublishing(false);
                 setPollKey((k) => k + 1); // pick up generated metadata

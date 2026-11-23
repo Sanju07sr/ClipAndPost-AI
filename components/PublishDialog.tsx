@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Check, Flame, Hash, LoaderCircle, Plus, RefreshCw, Send, Sparkles, TriangleAlert, X } from "lucide-react";
-import { PLATFORM_NAMES, type Clip, type PlatformId, type Privacy, type PublishMeta } from "@/lib/types";
-import { PlatformBadge } from "./PlatformBadge";
+import { type Clip, type PlatformId, type Privacy, type PublishMeta } from "@/lib/types";
+import { PlatformPicker, type PlatformState } from "./PlatformPicker";
+import { PLATFORMS, describeTargets } from "./PublishBar";
 
 interface Draft {
   clip: Clip;
@@ -20,12 +21,14 @@ interface Draft {
 export function PublishDialog(props: {
   jobId: string;
   clips: Clip[];
-  platforms: PlatformId[];
+  states: Record<PlatformId, PlatformState>;
+  targets: PlatformId[];
+  onTargetsChange: (t: PlatformId[]) => void;
   onClose: () => void;
   onPublished: () => void;
 }) {
-  const [targets, setTargets] = useState<PlatformId[]>(props.platforms);
-  const toggleTarget = (p: PlatformId) => setTargets((t) => (t.includes(p) ? t.filter((x) => x !== p) : [...t, p]));
+  const targets = props.targets;
+  const connected = PLATFORMS.filter((p) => props.states[p]?.connected);
   const [drafts, setDrafts] = useState<Draft[]>(() =>
     props.clips.map((c) => ({
       clip: c,
@@ -151,27 +154,9 @@ export function PublishDialog(props: {
               <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" /> {error}
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-sm text-ink-300">Post to</span>
-            {props.platforms.map((p) => {
-              const on = targets.includes(p);
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  role="checkbox"
-                  aria-checked={on}
-                  onClick={() => toggleTarget(p)}
-                  className={`inline-flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm ring-1 transition ${
-                    on ? "bg-white/[0.08] text-white ring-white/30" : "text-ink-400 ring-white/10 opacity-60 hover:opacity-100"
-                  }`}
-                >
-                  <PlatformBadge platform={p} size="sm" />
-                  {PLATFORM_NAMES[p]}
-                  {on && <Check className="h-3.5 w-3.5 text-lime-400" />}
-                </button>
-              );
-            })}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium uppercase tracking-wider text-ink-400">Post to</span>
+            <PlatformPicker platforms={PLATFORMS} states={props.states} selected={targets} onChange={props.onTargetsChange} />
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] p-1 ring-1 ring-white/5">
@@ -195,7 +180,7 @@ export function PublishDialog(props: {
                 ? "Preparing titles & hashtags…"
                 : !targets.length
                   ? "Choose where to post"
-                  : `${privacy === "public" ? "Publish" : `Upload as ${privacy}`} to ${targets.length === props.platforms.length && targets.length > 1 ? "all" : targets.map((t) => PLATFORM_NAMES[t]).join(" + ")}`}
+                  : `${privacy === "public" ? "Publish" : `Upload as ${privacy}`} to ${describeTargets(targets, connected)}`}
             </button>
           </div>
           <ul className="space-y-1 text-xs leading-relaxed text-ink-400">
