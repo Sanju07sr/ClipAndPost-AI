@@ -507,7 +507,7 @@ function ConfigIdField({ current, onSaved }: { current: string | null; onSaved: 
   return (
     <form onSubmit={submit} className="mt-3">
       <label className="mb-1.5 block text-sm text-ink-300">
-        Configuration ID <span className="text-ink-400">(from Facebook Login for Business → Configurations; step 6 below)</span>
+        Configuration ID <span className="text-ink-400">(from Facebook Login for Business → Configurations; step 7 below)</span>
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
@@ -557,7 +557,7 @@ function MetaGuide({ redirectUri }: { redirectUri: string }) {
   return (
     <details className="group mt-5 rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.07] open:bg-white/[0.03]">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3.5 font-medium text-ink-100 hover:text-white">
-        Step-by-step setup guide (about 10 minutes)
+        Step-by-step setup guide (about 10–15 minutes)
         <span className="ml-auto text-sm text-ink-400 group-open:hidden">Show</span>
         <span className="ml-auto hidden text-sm text-ink-400 group-open:inline">Hide</span>
       </summary>
@@ -571,10 +571,24 @@ function MetaGuide({ redirectUri }: { redirectUri: string }) {
               from your Facebook Page&apos;s settings → <Btn>Linked accounts</Btn>).
             </p>
           </Step>
-          <Step n={2} title="Create the app">
+          <Step n={2} title="Log in and register as a developer">
             <p>
-              Go to <A href="https://developers.facebook.com/apps">developers.facebook.com/apps</A>, logged in with the Facebook account that
-              manages your Page, and click <Btn>Create App</Btn>.
+              Open <A href="https://developers.facebook.com">developers.facebook.com</A> in Chrome or Safari (not inside the Facebook or
+              Instagram app) and click <Btn>Log in</Btn> at the top right. Sign in with the Facebook account that manages your Page.
+            </p>
+            <p>
+              Then click <Btn>Get Started</Btn> at the top right and complete the short developer registration: accept Meta&apos;s terms,
+              confirm your phone number or email, and choose a role such as <b>Developer</b>.
+            </p>
+            <p className="text-sm text-ink-400">
+              Already registered? You&apos;ll see <Btn>My Apps</Btn> instead of Get Started, so skip to the next step. Opening the apps page before
+              logging in shows &quot;Page Not Found&quot;.
+            </p>
+          </Step>
+          <Step n={3} title="Create the app">
+            <p>
+              Click <Btn>My Apps</Btn> at the top right (or open <A href="https://developers.facebook.com/apps">developers.facebook.com/apps</A>)
+              and then <Btn>Create App</Btn>.
             </p>
             <ul className="list-disc space-y-1 pl-5">
               <li>
@@ -593,7 +607,7 @@ function MetaGuide({ redirectUri }: { redirectUri: string }) {
               </li>
             </ul>
           </Step>
-          <Step n={3} title="Add the Facebook Page permissions">
+          <Step n={4} title="Add the Facebook Page permissions">
             <p>
               In the left menu open <Btn>Use cases</Btn>, find <b>Manage everything on your Page</b> and click <Btn>Customize</Btn>. Next to
               these permissions click <Btn>Add</Btn>:
@@ -606,7 +620,7 @@ function MetaGuide({ redirectUri }: { redirectUri: string }) {
               <Perm>pages_show_list</Perm> and <Perm>business_management</Perm> are already included.
             </p>
           </Step>
-          <Step n={4} title="Add the Instagram permissions">
+          <Step n={5} title="Add the Instagram permissions">
             <p>
               Back in <Btn>Use cases</Btn>, click <Btn>Customize</Btn> on <b>Manage messaging &amp; content on Instagram</b>. Choose{" "}
               <Btn>API setup with Facebook login</Btn> (not &quot;with Instagram login&quot;), then <Btn>Add</Btn>:
@@ -618,7 +632,7 @@ function MetaGuide({ redirectUri }: { redirectUri: string }) {
               <Perm>pages_read_engagement</Perm>
             </p>
           </Step>
-          <Step n={5} title="Add the redirect address">
+          <Step n={6} title="Add the redirect address">
             <p>
               In the left menu open <Btn>Facebook Login for Business</Btn> → <Btn>Settings</Btn>. Under <b>Client OAuth settings</b>, make sure{" "}
               <b>Client OAuth login</b> and <b>Web OAuth login</b> are on, and add this to <b>Valid OAuth redirect URIs</b>, then{" "}
@@ -629,7 +643,7 @@ function MetaGuide({ redirectUri }: { redirectUri: string }) {
               If Meta says the address must use https: localhost addresses work while the app is in Development mode, so you can continue.
             </p>
           </Step>
-          <Step n={6} title="Create a login configuration">
+          <Step n={7} title="Create a login configuration">
             <p>
               Open <Btn>Facebook Login for Business</Btn> → <Btn>Configurations</Btn> → <Btn>+ Create configuration</Btn>:
             </p>
@@ -650,19 +664,19 @@ function MetaGuide({ redirectUri }: { redirectUri: string }) {
               Copy the <b>Configuration ID</b> it shows and paste it into the Configuration ID box above.
             </p>
           </Step>
-          <Step n={7} title="Copy the App ID and App secret">
+          <Step n={8} title="Copy the App ID and App secret">
             <p>
               Left menu → <Btn>App settings</Btn> → <Btn>Basic</Btn>. Copy the <b>App ID</b> and click <Btn>Show</Btn> next to{" "}
               <b>App secret</b>. Paste both into the boxes above and click <Btn>Save keys</Btn>.
             </p>
           </Step>
-          <Step n={8} title="Connect">
+          <Step n={9} title="Connect">
             <p>
               Click <Btn>Connect Instagram &amp; Facebook</Btn> above. In Meta&apos;s window, select your Page and Instagram account and allow every
               permission (Meta grants none if any is unticked). You&apos;ll come back here showing your Page and @username.
             </p>
           </Step>
-          <Step n={9} title="Make your posts visible to everyone">
+          <Step n={10} title="Make your posts visible to everyone">
             <p>
               New apps start in <b>Development</b> mode, and Meta shows posts made by an app in Development mode only to people with a
               role on the app (you). Post one test Short, then check it from another account. If others can&apos;t see it, switch the app to{" "}

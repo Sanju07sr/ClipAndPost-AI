@@ -91,7 +91,7 @@ Every setting can also be an environment variable, set in `.env.local`; `.env.ex
 
 Each platform needs a free developer app, set up once. The **Settings** page has step-by-step instructions and the exact redirect URLs to register.
 
-- **Instagram Reels and Facebook Reels** use one Meta app created at [developers.facebook.com/apps](https://developers.facebook.com/apps/).
+- **Instagram Reels and Facebook Reels** use one Meta app. Log in at [developers.facebook.com](https://developers.facebook.com/), click **Get Started** to register as a developer (first time only), then **My Apps → Create App**.
   - Use cases: *Manage everything on your Page* and *Manage messaging & content on Instagram*, with Instagram set to *API setup with Facebook login*.
   - Login: a *Facebook Login for Business* configuration. Paste its Configuration ID in Settings.
   - Settings shows a full step-by-step guide.
