@@ -96,7 +96,7 @@ ClipAndPost AI finds the best moments in any long video and turns them into vert
 
 ## Install it with Claude (easiest)
 
-Claude Code can install everything for you, including Node.js, ffmpeg, yt-dlp and the app itself, and start the site.
+Claude Code can install everything for you, including Node.js, ffmpeg, yt-dlp and the app itself, and start the site. ClipAndPost AI is free and open source, so no GitHub account is needed.
 
 **1. Get Claude Code.** Use either of these:
 - the **Claude desktop app** from [claude.ai/download](https://claude.ai/download), then open its **Code** tab and choose a folder on your computer to work in
@@ -108,8 +108,6 @@ Claude Code can install everything for you, including Node.js, ffmpeg, yt-dlp an
 Install and run ClipAndPost AI on this computer:
 
 1. Clone https://github.com/Sanju07sr/ClipAndPost-AI into my home folder.
-   It's a private repository, so if git asks, help me log in to GitHub
-   (for example with the GitHub CLI: gh auth login).
 2. Install what it needs, using my system's package manager:
    Node.js 20 or newer, yt-dlp, deno, and ffmpeg WITH libass (captions).
    On macOS use Homebrew, and install ffmpeg from the homebrew-ffmpeg tap:
@@ -184,8 +182,6 @@ npm run dev
 ```
 
 Open **http://localhost:3000**. `npm run doctor` shows a ✔ or ✘ for each tool, so you know exactly what's missing.
-
-The repository is private, so `git clone` asks you to sign in to GitHub. The easiest way is the GitHub CLI: run `gh auth login` first.
 
 **Updating later:** stop the site with Control + C, then run `git pull && npm install && npm run dev`.
 
