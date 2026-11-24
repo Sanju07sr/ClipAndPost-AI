@@ -309,6 +309,10 @@ Keys are easiest to add on the **Settings** page. They're checked before saving 
 
 ---
 
+## License
+
+ClipAndPost AI is free and open source under the [MIT License](LICENSE). You can use, modify and share it; just keep the copyright notice.
+
 ## Please note
 
 Only clip videos you own or have permission to reuse. Downloading YouTube content may be restricted by YouTube's Terms of Service, and each platform's own rules apply to what you publish.
